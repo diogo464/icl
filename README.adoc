@@ -1,0 +1,18 @@
+== ICL
+
+=== RESOURCES
+JavaCC Documentation::
+	https://javacc.github.io/javacc/documentation/
+
+EBNF Wiki Page::
+	https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form
+
+Crafting Interpreters Book::
+	https://craftinginterpreters.com
+
+Java ASM Library::
+	https://asm.ow2.io/
+	https://asm.ow2.io/asm4-guide.pdf
+
+Krakatau Java Assembler/Disassembler/Decompiler::
+	https://github.com/Storyyeller/Krakatau
