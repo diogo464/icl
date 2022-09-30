@@ -1,0 +1,130 @@
+options {
+	STATIC = false;
+}
+
+PARSER_BEGIN(CalcParser)
+package icl.ast;
+
+import java.util.ArrayList;
+
+public class CalcParser {
+
+}
+
+PARSER_END(CalcParser)
+
+SKIP :
+{
+	< #WHITESPACE	: " " 	> |
+	< #TAB			: "\t" 	> |
+	< #CR			: "\r" 	>
+}
+
+TOKEN :
+{
+	< IDENT	: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
+	< NUM	: ((["0"-"9"])+)									> |
+	< PLUS	: "+" 												> |
+	< MINUS	: "-" 												> |
+	< MUL	: "*" 												> |
+	< DIV	: "/" 												> |
+	< LPAREN: "("												> |
+	< RPAREN: ")"												> |
+	< NL	: "\n"												>
+}
+
+AstNode Start():
+{ AstNode t; }
+{
+	t = Exp() <NL>
+	{ return t; }
+}
+
+AstNode Exp():
+{ AstNode n; }
+{
+	n = ExpAddSub()
+	{ return n; }
+}
+
+
+AstNode ExpAddSub():
+{ 
+	Token op = null;
+	AstNode l = null, r = null;
+}
+{
+	l = ExpMulDiv() ( 
+		(op = <PLUS> | op = <MINUS>) r = ExpMulDiv()
+		{ 
+			if( op != null ) {
+				if( op.kind == PLUS ) { l = new AstBinOp(AstBinOp.Kind.ADD, l, r); }
+				else { l = new AstBinOp(AstBinOp.Kind.SUB, l, r); }
+			}
+		}
+	)*
+	{ return l; }	
+}
+
+AstNode ExpMulDiv():
+{
+	Token op = null;
+	AstNode l = null, r = null;
+}
+{
+	l = ExpUnary() ( 
+		(op = <MUL> | op = <DIV>) r = ExpUnary()
+		{
+				if( op.kind == MUL ) { l = new AstBinOp(AstBinOp.Kind.MUL, l, r); }
+				else { l = new AstBinOp(AstBinOp.Kind.DIV, l, r); }
+		}
+	)*
+	{ return l; }
+}
+
+AstNode ExpUnary():
+{ 
+	Token n = null;
+	ArrayList<AstUnaryOp.Kind> k = null;
+	AstNode t = null;
+}
+{
+	( 
+		(
+			n = <PLUS> | n = <MINUS>
+			{ 
+			if ( k == null ) { k = new ArrayList<>(); }
+			if ( n.kind == PLUS ) { k.add(AstUnaryOp.Kind.POS); }
+			else if ( n.kind == MINUS ) { k.add(AstUnaryOp.Kind.NEG); }
+			}
+		)* 
+		t = ExpLitParen() 
+	)
+	{
+		if( k == null ) {
+			return t;
+		}else {
+			AstNode tmp = t;
+			for( var kind : k )
+				tmp = new AstUnaryOp(kind, tmp);
+			return tmp;
+		}
+	}
+}
+
+AstNode ExpLitParen():
+{ Token n = null; AstNode t = null; }
+{
+	( n = <NUM> { t = new AstNum(n); } | <LPAREN> t = Exp() <RPAREN> )
+	{ return t; }
+}
+
+AstNode Num():
+{ 
+	Token n;
+	AstNode t; 
+}
+{
+	n = <NUM> { t = new AstNum(n); }
+	{ return t; }
+}
