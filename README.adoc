@@ -1,5 +1,12 @@
 == ICL
 
+.Run
+[source,shell]
+----
+mvn javacc:javacc compile exec:java -Dexec.mainClass="icl.App"
+----
+
+
 === RESOURCES
 JavaCC Documentation::
 	https://javacc.github.io/javacc/documentation/

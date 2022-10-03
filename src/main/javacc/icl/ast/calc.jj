@@ -15,9 +15,7 @@ PARSER_END(CalcParser)
 
 SKIP :
 {
-	< #WHITESPACE	: " " 	> |
-	< #TAB			: "\t" 	> |
-	< #CR			: "\r" 	>
+	" " | "\t" | "\r"
 }
 
 TOKEN :
