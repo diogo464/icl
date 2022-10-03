@@ -1,3 +1,6 @@
 /.vscode/
 /.settings/
 /target/
+
+/*.calc
+/*.class
