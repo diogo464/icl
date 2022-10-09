@@ -20,6 +20,9 @@ SKIP :
 
 TOKEN :
 {
+	< KW_DEF: "def"												> |
+	< KW_IN	: "in"												> |
+	< KW_END: "end"												> |
 	< IDENT	: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM	: ((["0"-"9"])+)									> |
 	< PLUS	: "+" 												> |
@@ -28,23 +31,51 @@ TOKEN :
 	< DIV	: "/" 												> |
 	< LPAREN: "("												> |
 	< RPAREN: ")"												> |
+	< EQ	: "="												> |
 	< NL	: "\n"												>
 }
 
 AstNode Start():
 { AstNode t; }
 {
-	t = Exp() <NL>
+	t = Exp() (<NL>)*
 	{ return t; }
 }
 
 AstNode Exp():
 { AstNode n; }
 {
-	n = ExpAddSub()
+	(n = Def() | n = ExpAddSub())
 	{ return n; }
 }
 
+AstNode Def():
+{ 
+	AstDecl decl = null;
+	ArrayList<AstDecl> decls = new ArrayList<>();
+	AstNode body = null;
+}
+{
+	( 
+		<KW_DEF> 
+			(<NL>)* ( decl = Decl() (<NL>)* { decls.add(decl); })* 
+		<KW_IN> (<NL>)*
+			(body = Exp())? (<NL>)*
+		<KW_END> 
+	)
+	{ 
+		if( body == null )
+			body = new AstEmptyNode();
+		return new AstDef(decls, body);
+	}
+}
+
+AstDecl Decl():
+{ Token ident; AstNode exp; }
+{
+	( ident = <IDENT> <EQ> exp = Exp() )
+	{ return new AstDecl(ident, exp); }
+}
 
 AstNode ExpAddSub():
 { 
@@ -113,16 +144,10 @@ AstNode ExpUnary():
 AstNode ExpLitParen():
 { Token n = null; AstNode t = null; }
 {
-	( n = <NUM> { t = new AstNum(n); } | <LPAREN> t = Exp() <RPAREN> )
-	{ return t; }
-}
-
-AstNode Num():
-{ 
-	Token n;
-	AstNode t; 
-}
-{
-	n = <NUM> { t = new AstNum(n); }
+	( 
+		n = <NUM> { t = new AstNum(n); } 	|
+		n = <IDENT> { t = new AstVar(n); }	|
+		<LPAREN> t = Exp() <RPAREN>
+	)
 	{ return t; }
 }

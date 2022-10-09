@@ -7,6 +7,10 @@ public class AstNum implements AstNode {
 		this.token = num;
 	}
 
+	public short value() {
+		return Short.parseShort(this.token.image);
+	}
+
 	@Override
 	public double eval() {
 		return (double) Integer.parseInt(this.token.image);

@@ -6,4 +6,12 @@ public interface AstVisitor {
 	void acceptBinOp(AstBinOp node);
 
 	void acceptUnaryOp(AstUnaryOp node);
+
+	void acceptDecl(AstDecl node);
+
+	void acceptDef(AstDef node);
+
+	void acceptEmptyNode(AstEmptyNode node);
+
+	void acceptVar(AstVar node);
 }
