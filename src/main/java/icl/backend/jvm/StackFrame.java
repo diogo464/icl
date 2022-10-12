@@ -1,56 +1,67 @@
 package icl.backend.jvm;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
 class StackFrame {
-    private final String typename;
-    private final int varcount;
-    private final String[] varnames;
-    private final Optional<StackFrame> parent;
+	public static final String PARENT_VARNAME = "parent";
 
-    StackFrame(NameGenerator name_generator, String typename, int varcount, Optional<StackFrame> parent) {
-        this.typename = typename;
-        this.varcount = varcount;
-        this.varnames = new String[varcount];
-        this.parent = parent;
+	private final String typename;
+	private final StackFrame parent;
+	private final List<String> variables;
 
-        for (int i = 0; i < varcount; i++)
-            this.varnames[i] = name_generator.generateVariableName();
-    }
+	StackFrame(String typename, StackFrame parent) {
+		this.typename = typename;
+		this.parent = parent;
+		this.variables = new ArrayList<>();
+	}
 
-    public JvmCompiler.CompiledClass compile() {
-        // var writer = new ClassWriter(0);
-        // writer.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, this.typename, null,
-        // "java/lang/Object", null);
+	public String getTypename() {
+		return this.typename;
+	}
 
-        // if (this.parent.isPresent()) {
-        // writer.visitField(Opcodes.ACC_PUBLIC, "parent", "L" +
-        // this.parent.get().typename + ";", null, null);
-        // }
-        // for (var i = 0; i < this.varcount; ++i)
-        // writer.visitField(Opcodes.ACC_PUBLIC, this.varnames[i], "I", null, null);
+	/**
+	 * @return {@link StackFrame} The parent stackframe or null.
+	 */
+	public StackFrame getParent() {
+		return this.parent;
+	}
 
-        // var create_descriptor = "(";
-        // boolean add_comma = false;
-        // if (this.parent.isPresent()) {
-        // add_comma = true;
-        // writer.visitField(Opcodes.ACC_PUBLIC, "parent", "L" +
-        // this.parent.get().typename + ";", null, null);
-        // }
-        // for (var i = 0; i < this.varcount; i++) {
-        // if (add_comma) {
-        // create_descriptor += ",";
-        // }
-        // create_descriptor += "I";
-        // add_comma = true;
-        // }
-        // create_descriptor += ")L" + this.typename + ";";
+	public String getParentTypeName() {
+		if (this.parent != null)
+			return this.parent.getTypename();
+		return "java/lang/Object";
+	}
 
-        // writer.visitMethod(Opcodes.ACC_STATIC + Opcodes.ACC_PUBLIC, "create",
-        // create_descriptor, null, null);
-        return null;
-    }
+	public void addVariable(String variable) {
+		this.variables.add(variable);
+	}
+
+	public JvmCompiler.CompiledClass compile() {
+		var writer = new ClassWriter(0);
+		writer.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, this.typename, null,
+				"java/lang/Object", null);
+
+		if (parent == null)
+			writer.visitField(Opcodes.ACC_PUBLIC, PARENT_VARNAME, "Ljava/lang/Object;", null, null);
+		else
+			writer.visitField(Opcodes.ACC_PUBLIC, PARENT_VARNAME, "L" + this.parent.getTypename() + ";", null, null);
+
+		for (var variable : this.variables)
+			writer.visitField(Opcodes.ACC_PUBLIC, variable, "I", null, null);
+
+		var init = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
+		init.visitCode();
+		init.visitMaxs(1, 1);
+		init.visitVarInsn(Opcodes.ALOAD, 0);
+		init.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+		init.visitInsn(Opcodes.RETURN);
+		init.visitEnd();
+
+		writer.visitEnd();
+		return new JvmCompiler.CompiledClass(this.typename, writer.toByteArray());
+	}
 }
