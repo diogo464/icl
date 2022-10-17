@@ -20,25 +20,26 @@ SKIP :
 
 TOKEN :
 {
-	< KW_DEF: "def"												> |
-	< KW_IN	: "in"												> |
-	< KW_END: "end"												> |
-	< IDENT	: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
-	< NUM	: ((["0"-"9"])+)									> |
-	< PLUS	: "+" 												> |
-	< MINUS	: "-" 												> |
-	< MUL	: "*" 												> |
-	< DIV	: "/" 												> |
-	< LPAREN: "("												> |
-	< RPAREN: ")"												> |
-	< EQ	: "="												> |
-	< NL	: "\n"												>
+	< KW_LET	: "let"												> |
+	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
+	< NUM		: ((["0"-"9"])+)									> |
+	< PLUS		: "+" 												> |
+	< MINUS		: "-" 												> |
+	< MUL		: "*" 												> |
+	< DIV		: "/" 												> |
+	< LPAREN	: "("												> |
+	< RPAREN	: ")"												> |
+	< LBRACK	: "{"												> |
+	< RBRACK	: "}"												> |
+	< SEMICOL	: ";"												> |
+	< EQ		: "="												> |
+	< NL		: "\n"												>
 }
 
 AstNode Start():
 { AstNode t; }
 {
-	t = Exp() (<NL>)*
+	t = Exp() (<NL>)* <SEMICOL> <SEMICOL> (<NL>)*
 	{ return t; }
 }
 
@@ -57,11 +58,10 @@ AstNode Def():
 }
 {
 	( 
-		<KW_DEF> 
-			(<NL>)* ( decl = Decl() (<NL>)* { decls.add(decl); })* 
-		<KW_IN> (<NL>)*
+		<LBRACK> 
+			(<NL>)* ( <KW_LET> decl = Decl() <SEMICOL> (<NL>)* { decls.add(decl); })* 
 			(body = Exp())? (<NL>)*
-		<KW_END> 
+		<RBRACK>
 	)
 	{ 
 		if( body == null )
