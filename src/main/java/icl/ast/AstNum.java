@@ -12,11 +12,6 @@ public class AstNum implements AstNode {
 	}
 
 	@Override
-	public double eval() {
-		return (double) Integer.parseInt(this.token.image);
-	}
-
-	@Override
 	public void accept(AstVisitor visitor) {
 		visitor.acceptNum(this);
 	}

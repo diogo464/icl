@@ -1,4 +1,4 @@
-package icl.backend.jvm;
+package icl.frontend.jvm;
 
 import java.util.List;
 

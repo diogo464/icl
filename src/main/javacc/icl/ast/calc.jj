@@ -23,6 +23,7 @@ TOKEN :
 	< KW_LET	: "let"												> |
 	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM		: ((["0"-"9"])+)									> |
+	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
 	< PLUS		: "+" 												> |
 	< MINUS		: "-" 												> |
 	< MUL		: "*" 												> |
@@ -147,6 +148,7 @@ AstNode ExpLitParen():
 	( 
 		n = <NUM> { t = new AstNum(n); } 	|
 		n = <IDENT> { t = new AstVar(n); }	|
+		n = <STRLIT> { t = new AstStr(n); } |
 		<LPAREN> t = Exp() <RPAREN>
 	)
 	{ return t; }

@@ -1,4 +1,4 @@
-package icl.backend.interp;
+package icl.frontend.interp;
 
 import icl.Environment;
 import icl.ast.AstBinOp;

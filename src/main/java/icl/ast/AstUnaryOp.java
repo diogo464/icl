@@ -15,15 +15,6 @@ public class AstUnaryOp implements AstNode {
 	}
 
 	@Override
-	public double eval() {
-		var v = this.expr.eval();
-		return switch (this.kind) {
-			case POS -> v;
-			case NEG -> -v;
-		};
-	}
-
-	@Override
 	public void accept(AstVisitor visitor) {
 		visitor.acceptUnaryOp(this);
 	}
