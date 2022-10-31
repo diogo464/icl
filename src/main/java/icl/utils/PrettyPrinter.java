@@ -35,6 +35,7 @@ public class PrettyPrinter implements AstVisitor {
 		var symbol = switch (node.kind) {
 			case POS -> "+";
 			case NEG -> "-";
+			case UP -> "up";
 		};
 		System.out.print(symbol);
 		node.expr.accept(this);

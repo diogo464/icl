@@ -21,6 +21,7 @@ SKIP :
 TOKEN :
 {
 	< KW_LET	: "let"												> |
+	< UP		: "up"												> |
 	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM		: ((["0"-"9"])+)									> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
@@ -121,11 +122,12 @@ AstNode ExpUnary():
 {
 	( 
 		(
-			n = <PLUS> | n = <MINUS>
+			n = <PLUS> | n = <MINUS> | n = <UP>
 			{ 
 			if ( k == null ) { k = new ArrayList<>(); }
 			if ( n.kind == PLUS ) { k.add(AstUnaryOp.Kind.POS); }
 			else if ( n.kind == MINUS ) { k.add(AstUnaryOp.Kind.NEG); }
+			else if ( n.kind ==  UP ) { k.add(AstUnaryOp.Kind.UP); }
 			}
 		)* 
 		t = ExpLitParen() 
