@@ -61,7 +61,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptNum(AstNum node) {
-		var value = node.value();
+		var value = node.value;
 		this.method.visitIntInsn(Opcodes.SIPUSH, value);
 	}
 
@@ -118,7 +118,7 @@ class Visitor implements AstVisitor {
 			this.method.visitInsn(Opcodes.DUP);
 			// Push the value of this variable to the top of the stack
 			decl.value.accept(this);
-			var variable = this.environment.define(decl.name.image);
+			var variable = this.environment.define(decl.name);
 			this.method.visitFieldInsn(Opcodes.PUTFIELD, variable.stackframe.getTypename(), variable.name, "I");
 		}
 		this.method.visitInsn(Opcodes.POP);
@@ -138,9 +138,10 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptVar(AstVar node) {
-		var variable = this.environment.lookup(node.name.image);
+		var variable = this.environment.lookup(node.name);
 		if (variable == null)
-			throw new RuntimeException("Variable " + node.name + " at line " + node.name.beginLine + " is not defined");
+			throw new RuntimeException(
+					"Variable " + node.name + " at line " + node.location.beginLine + " is not defined");
 		this.compilePushStackFrame(variable.depth);
 		this.method.visitFieldInsn(Opcodes.GETFIELD, variable.stackframe.getTypename(), variable.name, "I");
 	}

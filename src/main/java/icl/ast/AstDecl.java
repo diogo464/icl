@@ -1,12 +1,14 @@
 package icl.ast;
 
 public class AstDecl implements AstNode {
-	public final Token name;
+	public final String name;
 	public final AstNode value;
+	public final Location location;
 
 	public AstDecl(Token name, AstNode value) {
-		this.name = name;
+		this.name = name.image;
 		this.value = value;
+		this.location = new Location(name);
 	}
 
 	@Override

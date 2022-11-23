@@ -1,10 +1,12 @@
 package icl.ast;
 
 public class AstStr implements AstNode {
-	private Token token;
+	public final String value;
+	public final Location location;
 
-	public AstStr(Token str) {
-		this.token = str;
+	public AstStr(Token token) {
+		this.value = token.image;
+		this.location = new Location(token);
 	}
 
 	@Override

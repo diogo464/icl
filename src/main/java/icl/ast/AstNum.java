@@ -1,14 +1,12 @@
 package icl.ast;
 
 public class AstNum implements AstNode {
-	private Token token;
+	public final short value;
+	public final Location location;
 
 	public AstNum(Token num) {
-		this.token = num;
-	}
-
-	public short value() {
-		return Short.parseShort(this.token.image);
+		this.value = Short.parseShort(num.image);
+		this.location = new Location(num);
 	}
 
 	@Override

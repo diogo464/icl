@@ -21,7 +21,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptNum(AstNum node) {
-		this.value = node.value();
+		this.value = node.value;
 	}
 
 	@Override
@@ -52,7 +52,7 @@ class Visitor implements AstVisitor {
 	public void acceptDecl(AstDecl node) {
 		var tmp = this.value;
 		node.value.accept(this);
-		this.env.define(node.name.image, this.value);
+		this.env.define(node.name, this.value);
 		this.value = tmp;
 	}
 
@@ -72,7 +72,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptVar(AstVar node) {
-		var value = this.env.lookup(node.name.image);
+		var value = this.env.lookup(node.name);
 		if (value == null)
 			throw new RuntimeException("Variable " + node.name + " is not defined");
 		this.value = value;

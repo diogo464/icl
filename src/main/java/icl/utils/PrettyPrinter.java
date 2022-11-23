@@ -12,7 +12,7 @@ import icl.ast.AstVisitor;
 public class PrettyPrinter implements AstVisitor {
 	@Override
 	public void acceptNum(AstNum node) {
-		System.out.print(node.value());
+		System.out.print(node.value);
 	}
 
 	@Override
