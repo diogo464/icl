@@ -21,6 +21,10 @@ SKIP :
 TOKEN :
 {
 	< KW_LET	: "let"												> |
+	< KW_NEW	: "new"												> |
+	< KW_IF		: "if"												> |
+	< KW_WHILE	: "while"											> |
+	< KW_PRINT	: "print"											> |
 	< UP		: "up"												> |
 	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM		: ((["0"-"9"])+)									> |
@@ -35,6 +39,14 @@ TOKEN :
 	< RBRACK	: "}"												> |
 	< SEMICOL	: ";"												> |
 	< EQ		: "="												> |
+	< CMP		: "=="												> |
+	< GT		: ">"												> |
+	< GTE		: ">="												> |
+	< LT		: "<"												> |
+	< LTE		: "<="												> |
+	< LAND		: "&&"												> |
+	< LOR		: "||"												> |
+	< LNOT		: "~"												> |
 	< NL		: "\n"												>
 }
 
