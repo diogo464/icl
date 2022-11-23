@@ -46,6 +46,7 @@ TOKEN :
 	< LAND		: "&&"												> |
 	< LOR		: "||"												> |
 	< LNOT		: "~"												> |
+	< ASSIGN	: ":="												> |
 	< NL		: "\n"												>
 }
 
