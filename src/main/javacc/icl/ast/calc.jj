@@ -1,5 +1,6 @@
 options {
 	STATIC = false;
+	LOOKAHEAD = 2;
 }
 
 PARSER_BEGIN(CalcParser)
@@ -15,20 +16,20 @@ PARSER_END(CalcParser)
 
 SKIP :
 {
-	" " | "\t" | "\r"
+	" " | "\t" | "\r" | "\n"
 }
 
 TOKEN :
 {
 	< KW_LET	: "let"												> |
-	< KW_NEW	: "new"												> |
 	< KW_IF		: "if"												> |
+	< KW_ELSE	: "else"											> |
 	< KW_WHILE	: "while"											> |
-	< KW_PRINT	: "print"											> |
 	< KW_MUT	: "mut"												> |
 	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM		: ((["0"-"9"])+)									> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
+	< COMMA		: "," 												> |
 	< PLUS		: "+" 												> |
 	< MINUS		: "-" 												> |
 	< MUL		: "*" 												> |
@@ -48,59 +49,176 @@ TOKEN :
 	< LOR		: "||"												> |
 	< LNOT		: "~"												> |
 	< DEREF		: "!"												> |
-	< ASSIGN	: ":="												> |
-	< NL		: "\n"												>
+	< ASSIGN	: ":="												>
 }
 
 AstNode Start():
 { AstNode t; }
 {
-	t = Exp() (<NL>)* <SEMICOL> <SEMICOL> (<NL>)*
+	t = Expr() <SEMICOL> <SEMICOL>
 	{ return t; }
 }
 
-AstNode Exp():
+AstNode Stmt():
 { AstNode n; }
 {
-	(n = Def() | n = ExpAddSub())
+	(n = StmtAssign() | n = StmtDecl() | n = StmtWhile() )
 	{ return n; }
 }
 
-AstNode Def():
+AstNode Expr():
+{ AstNode n; }
+{
+	(n = ExprBlock() | n = ExprLOr() | n = ExprIf())
+	{ return n; }
+}
+
+AstNode StmtAssign():
+{
+	Token name = null;	
+	AstNode exp = null;
+}
+{
+	(name = <IDENT>) <ASSIGN> (exp = Expr()) <SEMICOL>
+	{ return new AstAssign(name, exp); }
+}
+
+AstNode StmtDecl():
+{
+	Token mut = null;
+	Token ident = null;
+	AstNode exp = null;
+}
+{
+	<KW_LET> (mut = <KW_MUT>)? (ident = <IDENT>) <EQ> (exp = Expr()) <SEMICOL>
+	{ return new AstDecl(ident, exp, mut != null); }
+}
+
+AstNode StmtWhile():
+{
+	var condition = (AstNode) null;
+	var body = (AstNode) null;
+}
+{
+	<KW_WHILE> 	(condition = Expr()) (body = ExprBlock())? <SEMICOL>
+	{ if (body == null) { body = new AstEmptyNode(); } }
+	{ return new AstLoop(condition, body); }
+}
+
+AstNode ExprIf():
+{
+	var conditionals 	= new ArrayList<AstIf.Conditional>();
+	var fallthrough 	= (AstNode) null;
+	var condition		= (AstNode) null;
+	var expression 		= (AstNode) null;
+}
+{
+	<KW_IF> (condition = Expr()) (expression = ExprBlock())
+	{ conditionals.add(new AstIf.Conditional(condition, expression)); }
+	(<KW_ELSE> <KW_IF> (condition = Expr()) (expression = ExprBlock()) {conditionals.add(new AstIf.Conditional(condition, expression));})*
+	(<KW_ELSE> expression = ExprBlock())?
+	{ if( expression == null) { fallthrough = new AstEmptyNode(); } else { fallthrough = expression; } }
+	{ return new AstIf(conditionals, fallthrough); }
+}
+
+AstNode ExprBlock():
 { 
-	AstDecl decl = null;
-	ArrayList<AstDecl> decls = new ArrayList<>();
+	AstNode stmt = null;
 	AstNode body = null;
+	ArrayList<AstNode> stmts = new ArrayList<>();
 }
 {
 	( 
 		<LBRACK> 
-			(<NL>)* ( <KW_LET> decl = Decl() <SEMICOL> (<NL>)* { decls.add(decl); })* 
-			(body = Exp())? (<NL>)*
+			(stmt = Stmt() { stmts.add(stmt); })*
+			(body = Expr())?
 		<RBRACK>
 	)
 	{ 
 		if( body == null )
 			body = new AstEmptyNode();
-		return new AstDef(decls, body);
+		return new AstScope(stmts, body);
 	}
 }
 
-AstDecl Decl():
-{ Token ident; AstNode exp; }
+AstNode ExprLOr():
 {
-	( ident = <IDENT> <EQ> exp = Exp() )
-	{ return new AstDecl(ident, exp); }
+	Token op = null;
+	AstNode l = null, r= null;
+}
+{
+	l = ExprLAnd() ( 
+		(op = <LOR>) r = ExprLAnd()
+		{ 
+			if( op != null ) {
+				l = new AstBinOp(AstBinOp.Kind.LOR, l, r);
+			}
+		}
+	)*
+	{ return l; }	
 }
 
-AstNode ExpAddSub():
+AstNode ExprLAnd():
+{
+	Token op = null;
+	AstNode l = null, r= null;
+}
+{
+	l = ExprAddSub() ( 
+		(op = <LAND>) r = ExprCmp()
+		{ 
+			if( op != null ) {
+				l = new AstBinOp(AstBinOp.Kind.LAND, l, r);
+			}
+		}
+	)*
+	{ return l; }
+}
+
+AstNode ExprCmp():
+{
+	Token op = null;
+	AstNode l = null, r= null;
+}
+{
+	l = ExprAddSub() ( 
+		(op = <CMP>) r = ExprRel()
+		{ 
+			if( op != null ) {
+			}
+		}
+	)*
+	{ return l; }
+}
+
+AstNode ExprRel():
+{
+	Token op = null;
+	AstNode l = null, r= null;
+}
+{
+	l = ExprAddSub() ( 
+		(op = <GT> | op = <GTE> | op = <LT> | op = <LTE>) r = ExprAddSub()
+		{ 
+			if( op != null ) {
+				if( op.kind == GT ) { l = new AstBinOp(AstBinOp.Kind.GT, l, r);}
+				else if( op.kind == GTE ) { l = new AstBinOp(AstBinOp.Kind.GTE, l, r); }
+				else if( op.kind == LT ) { l = new AstBinOp(AstBinOp.Kind.LT, l, r); }
+				else if( op.kind == LTE ) { l = new AstBinOp(AstBinOp.Kind.LTE, l, r); }
+			}
+		}
+	)*
+	{ return l; }
+}
+
+AstNode ExprAddSub():
 { 
 	Token op = null;
 	AstNode l = null, r = null;
 }
 {
-	l = ExpMulDiv() ( 
-		(op = <PLUS> | op = <MINUS>) r = ExpMulDiv()
+	l = ExprMulDiv() ( 
+		(op = <PLUS> | op = <MINUS>) r = ExprMulDiv()
 		{ 
 			if( op != null ) {
 				if( op.kind == PLUS ) { l = new AstBinOp(AstBinOp.Kind.ADD, l, r); }
@@ -111,14 +229,14 @@ AstNode ExpAddSub():
 	{ return l; }	
 }
 
-AstNode ExpMulDiv():
+AstNode ExprMulDiv():
 {
 	Token op = null;
 	AstNode l = null, r = null;
 }
 {
-	l = ExpUnary() ( 
-		(op = <MUL> | op = <DIV>) r = ExpUnary()
+	l = ExprUnary() ( 
+		(op = <MUL> | op = <DIV>) r = ExprUnary()
 		{
 				if( op.kind == MUL ) { l = new AstBinOp(AstBinOp.Kind.MUL, l, r); }
 				else { l = new AstBinOp(AstBinOp.Kind.DIV, l, r); }
@@ -127,7 +245,7 @@ AstNode ExpMulDiv():
 	{ return l; }
 }
 
-AstNode ExpUnary():
+AstNode ExprUnary():
 { 
 	Token n = null;
 	ArrayList<AstUnaryOp.Kind> k = null;
@@ -136,14 +254,16 @@ AstNode ExpUnary():
 {
 	( 
 		(
-			n = <PLUS> | n = <MINUS>
+			n = <PLUS> | n = <MINUS> | n = <LNOT> | n = <DEREF>
 			{ 
 			if ( k == null ) { k = new ArrayList<>(); }
 			if ( n.kind == PLUS ) { k.add(AstUnaryOp.Kind.POS); }
 			else if ( n.kind == MINUS ) { k.add(AstUnaryOp.Kind.NEG); }
+			else if ( n.kind == LNOT ) { k.add(AstUnaryOp.Kind.LNOT); }
+			else if ( n.kind == DEREF ) { k.add(AstUnaryOp.Kind.DEREF); }
 			}
 		)* 
-		t = ExpLitParen() 
+		t = ExprLitParenCall() 
 	)
 	{
 		if( k == null ) {
@@ -157,14 +277,23 @@ AstNode ExpUnary():
 	}
 }
 
-AstNode ExpLitParen():
-{ Token n = null; AstNode t = null; }
+AstNode ExprLitParenCall():
+{
+	var n 			= (Token) null;
+	var t 			= (AstNode) null;
+	var arguments 	= new ArrayList<AstNode>();
+	var argument 	= (AstNode) null;
+}
 {
 	( 
-		n = <NUM> { t = new AstNum(n); } 	|
-		n = <IDENT> { t = new AstVar(n); }	|
-		n = <STRLIT> { t = new AstStr(n); } |
-		<LPAREN> t = Exp() <RPAREN>
+		n = <NUM> { return new AstNum(n); } 	|
+		n = <IDENT> { return new AstVar(n); }	|
+		n = <STRLIT> { return new AstStr(n); } 	|
+		<LPAREN> t = Expr() <RPAREN>
+		(<LPAREN>
+			(argument = Expr() {arguments.add(argument);})
+			(<COMMA> argument = Expr() {arguments.add(argument);})*
+		<RPAREN> {return new AstCall(t, arguments); })?
+		{ return t; }
 	)
-	{ return t; }
 }

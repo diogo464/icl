@@ -9,9 +9,15 @@ public interface AstVisitor {
 
 	void acceptDecl(AstDecl node);
 
-	void acceptDef(AstDef node);
+	void acceptScope(AstScope node);
 
 	void acceptEmptyNode(AstEmptyNode node);
 
 	void acceptVar(AstVar node);
+
+	void acceptCall(AstCall call);
+
+	void acceptIf(AstIf astIf);
+
+	void acceptLoop(AstLoop loop);
 }

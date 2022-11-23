@@ -9,7 +9,7 @@ import org.objectweb.asm.Opcodes;
 
 import icl.ast.AstBinOp;
 import icl.ast.AstDecl;
-import icl.ast.AstDef;
+import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstNum;
 import icl.ast.AstUnaryOp;
@@ -74,6 +74,8 @@ class Visitor implements AstVisitor {
 			case DIV -> Opcodes.IDIV;
 			case MUL -> Opcodes.IMUL;
 			case SUB -> Opcodes.ISUB;
+			// TODO: implement others
+			default -> throw new IllegalArgumentException("Unexpected value: " + node.kind);
 		};
 		this.method.visitInsn(opcode);
 	}
@@ -84,6 +86,8 @@ class Visitor implements AstVisitor {
 			case POS -> {
 			}
 			case NEG -> this.method.visitInsn(Opcodes.INEG);
+			// TODO: implement others
+			default -> throw new IllegalArgumentException("Unexpected value: " + node.kind);
 		}
 	}
 
@@ -93,7 +97,7 @@ class Visitor implements AstVisitor {
 	}
 
 	@Override
-	public void acceptDef(AstDef node) {
+	public void acceptScope(AstScope node) {
 		this.environment.beginScope();
 		var stackframe = this.environment.getCurrentStackFrame();
 		this.method.visitTypeInsn(Opcodes.NEW, stackframe.getTypename());
@@ -113,13 +117,14 @@ class Visitor implements AstVisitor {
 		// Assign the current stackframe to the SL variable
 		this.method.visitInsn(Opcodes.DUP);
 		this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
-		for (var decl : node.decls) {
-			// Push a copy of the stackframe to the top of the stack
-			this.method.visitInsn(Opcodes.DUP);
-			// Push the value of this variable to the top of the stack
-			decl.value.accept(this);
-			var variable = this.environment.define(decl.name);
-			this.method.visitFieldInsn(Opcodes.PUTFIELD, variable.stackframe.getTypename(), variable.name, "I");
+		for (var decl : node.stmts) {
+			//// Push a copy of the stackframe to the top of the stack
+			// this.method.visitInsn(Opcodes.DUP);
+			//// Push the value of this variable to the top of the stack
+			// decl.value.accept(this);
+			// var variable = this.environment.define(decl.name);
+			// this.method.visitFieldInsn(Opcodes.PUTFIELD,
+			// variable.stackframe.getTypename(), variable.name, "I");
 		}
 		this.method.visitInsn(Opcodes.POP);
 		node.body.accept(this);

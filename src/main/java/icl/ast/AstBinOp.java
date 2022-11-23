@@ -6,6 +6,13 @@ public class AstBinOp implements AstNode {
 		SUB,
 		MUL,
 		DIV,
+		CMP,
+		GT,
+		GTE,
+		LT,
+		LTE,
+		LAND,
+		LOR,
 	}
 
 	public final Kind kind;

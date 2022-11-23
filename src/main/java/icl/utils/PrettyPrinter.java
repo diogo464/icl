@@ -2,7 +2,7 @@ package icl.utils;
 
 import icl.ast.AstBinOp;
 import icl.ast.AstDecl;
-import icl.ast.AstDef;
+import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstNum;
 import icl.ast.AstUnaryOp;
@@ -23,6 +23,13 @@ public class PrettyPrinter implements AstVisitor {
 			case DIV -> "/";
 			case MUL -> "*";
 			case SUB -> "-";
+			case LAND -> "&&";
+			case CMP -> "==";
+			case GT -> ">";
+			case GTE -> ">=";
+			case LT -> "<";
+			case LTE -> "<=";
+			case LOR -> "||";
 		};
 		System.out.print(" ");
 		System.out.print(symbol);
@@ -35,6 +42,8 @@ public class PrettyPrinter implements AstVisitor {
 		var symbol = switch (node.kind) {
 			case POS -> "+";
 			case NEG -> "-";
+			case DEREF -> "!";
+			case LNOT -> "~";
 		};
 		System.out.print(symbol);
 		node.expr.accept(this);
@@ -48,11 +57,11 @@ public class PrettyPrinter implements AstVisitor {
 	}
 
 	@Override
-	public void acceptDef(AstDef node) {
+	public void acceptScope(AstScope node) {
 		System.out.println("def");
-		for (var decl : node.decls) {
+		for (var decl : node.stmts) {
 			decl.accept(this);
-			System.out.println("");
+			System.out.println(";");
 		}
 		System.out.println("in");
 		node.body.accept(this);

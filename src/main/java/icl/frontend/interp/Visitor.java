@@ -3,7 +3,7 @@ package icl.frontend.interp;
 import icl.Environment;
 import icl.ast.AstBinOp;
 import icl.ast.AstDecl;
-import icl.ast.AstDef;
+import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstNum;
 import icl.ast.AstUnaryOp;
@@ -11,40 +11,52 @@ import icl.ast.AstVar;
 import icl.ast.AstVisitor;
 
 class Visitor implements AstVisitor {
-	private Environment<Double> env;
-	double value;
+	private Environment<Value> env;
+	private Value value;
 
-	Visitor() {
-		this.env = new Environment<>();
-		this.value = 0.0;
+	Visitor(Environment<Value> env) {
+		this.env = env;
+		this.value = null;
+	}
+
+	public Value getValue() {
+		return this.value;
 	}
 
 	@Override
 	public void acceptNum(AstNum node) {
-		this.value = node.value;
+		this.value = Value.number(node.value);
 	}
 
 	@Override
 	public void acceptBinOp(AstBinOp node) {
-		node.left.accept(this);
-		var left = this.value;
-		node.right.accept(this);
-		var right = this.value;
-		this.value = switch (node.kind) {
+		var leftVal = Interpretor.interpret(this.env, node.left);
+		var rightVal = Interpretor.interpret(this.env, node.right);
+
+		var left = leftVal.getNumber();
+		var right = rightVal.getNumber();
+		var value = switch (node.kind) {
 			case ADD -> left + right;
 			case SUB -> left - right;
 			case MUL -> left * right;
 			case DIV -> left / right;
+			// TODO: implement others
+			default -> throw new IllegalArgumentException("Unexpected value: " + node.kind);
 		};
+
+		this.value = Value.number((short) value);
 	}
 
 	@Override
 	public void acceptUnaryOp(AstUnaryOp node) {
 		node.expr.accept(this);
-		this.value = switch (node.kind) {
-			case POS -> +this.value;
-			case NEG -> -this.value;
+		var value = switch (node.kind) {
+			case POS -> +this.value.getNumber();
+			case NEG -> -this.value.getNumber();
+			// TODO: Implement others
+			default -> throw new IllegalArgumentException("Unexpected value: " + node.kind);
 		};
+		this.value = Value.number((short) value);
 	}
 
 	@Override
@@ -56,17 +68,18 @@ class Visitor implements AstVisitor {
 	}
 
 	@Override
-	public void acceptDef(AstDef node) {
-		this.env = this.env.beginScope();
-		for (var decl : node.decls) {
-			decl.accept(this);
+	public void acceptScope(AstScope node) {
+		var env = this.env.beginScope();
+		for (var decl : node.stmts) {
+			Interpretor.interpret(env, decl);
 		}
-		node.body.accept(this);
-		this.env = this.env.endScope();
+		var value = Interpretor.interpret(env, node.body);
+		this.value = value;
 	}
 
 	@Override
 	public void acceptEmptyNode(AstEmptyNode node) {
+		this.value = Value.void_();
 	}
 
 	@Override
