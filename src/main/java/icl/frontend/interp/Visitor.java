@@ -44,7 +44,6 @@ class Visitor implements AstVisitor {
 		this.value = switch (node.kind) {
 			case POS -> +this.value;
 			case NEG -> -this.value;
-			case UP -> this.value + 1;
 		};
 	}
 

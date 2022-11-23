@@ -4,7 +4,6 @@ public class AstUnaryOp implements AstNode {
 	public enum Kind {
 		POS,
 		NEG,
-		UP,
 	}
 
 	public final Kind kind;
