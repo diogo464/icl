@@ -2,21 +2,22 @@ package icl.ast;
 
 import java.util.List;
 
-public class AstIf implements AstNode {
-	public static class Conditional {
-		public final AstNode condition;
-		public final AstNode expression;
+public class AstIf<T> extends AstNode<T> {
+	public static class Conditional<T> {
+		public final AstNode<T> condition;
+		public final AstNode<T> expression;
 
-		public Conditional(AstNode condition, AstNode expression) {
+		public Conditional(AstNode<T> condition, AstNode<T> expression) {
 			this.condition = condition;
 			this.expression = expression;
 		}
 	}
 
-	public final List<Conditional> conditionals;
-	public final AstNode fallthrough;
+	public final List<Conditional<T>> conditionals;
+	public final AstNode<T> fallthrough;
 
-	public AstIf(List<Conditional> conditionals, AstNode fallthrough) {
+	public AstIf(T annotation, List<Conditional<T>> conditionals, AstNode<T> fallthrough) {
+		super(annotation);
 		if (conditionals == null || fallthrough == null)
 			throw new IllegalArgumentException("conditionals and fallthrough must be non-null");
 		this.conditionals = conditionals;
@@ -24,7 +25,7 @@ public class AstIf implements AstNode {
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
+	public void accept(AstVisitor<T> visitor) {
 		visitor.acceptIf(this);
 	}
 

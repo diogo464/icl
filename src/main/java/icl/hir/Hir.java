@@ -1,9 +1,9 @@
 package icl.hir;
 
-import icl.ast.AstNode;
-
 public class Hir {
-	public static HirNode lower(AstNode node) {
-		return null;
+	public final Location location;
+
+	public Hir(Location location) {
+		this.location = location;
 	}
 }

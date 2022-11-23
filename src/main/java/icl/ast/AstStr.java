@@ -1,16 +1,15 @@
 package icl.ast;
 
-public class AstStr implements AstNode {
+public class AstStr<T> extends AstNode<T> {
 	public final String value;
-	public final Location location;
 
-	public AstStr(Token token) {
-		this.value = token.image;
-		this.location = new Location(token);
+	public AstStr(T annotation, String value) {
+		super(annotation);
+		this.value = value;
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
+	public void accept(AstVisitor<T> visitor) {
 		throw new RuntimeException("Trying to visit a string literal");
 	}
 

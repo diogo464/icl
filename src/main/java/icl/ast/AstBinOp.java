@@ -1,7 +1,7 @@
 package icl.ast;
 
-public class AstBinOp implements AstNode {
-	public enum Kind {
+public class AstBinOp<T> extends AstNode<T> {
+	public static enum Kind {
 		ADD,
 		SUB,
 		MUL,
@@ -16,17 +16,18 @@ public class AstBinOp implements AstNode {
 	}
 
 	public final Kind kind;
-	public final AstNode left;
-	public final AstNode right;
+	public final AstNode<T> left;
+	public final AstNode<T> right;
 
-	public AstBinOp(Kind kind, AstNode left, AstNode right) {
+	public AstBinOp(T annotation, Kind kind, AstNode<T> left, AstNode<T> right) {
+		super(annotation);
 		this.kind = kind;
 		this.left = left;
 		this.right = right;
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
+	public void accept(AstVisitor<T> visitor) {
 		visitor.acceptBinOp(this);
 	}
 

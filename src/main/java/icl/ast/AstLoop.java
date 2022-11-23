@@ -1,16 +1,17 @@
 package icl.ast;
 
-public class AstLoop implements AstNode {
-	public final AstNode condition;
-	public final AstNode body;
+public class AstLoop<T> extends AstNode<T> {
+	public final AstNode<T> condition;
+	public final AstNode<T> body;
 
-	public AstLoop(AstNode condition, AstNode body) {
+	public AstLoop(T annotation, AstNode<T> condition, AstNode<T> body) {
+		super(annotation);
 		this.condition = condition;
 		this.body = body;
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
+	public void accept(AstVisitor<T> visitor) {
 		visitor.acceptLoop(this);
 	}
 

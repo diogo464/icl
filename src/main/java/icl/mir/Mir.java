@@ -1,7 +1,11 @@
-package icl.typing;
+package icl.mir;
+
+import icl.Environment;
+import icl.ast.AstNode;
+import icl.hir.Hir;
 
 /*-
- *	Type checker rulesfor the AST.
+ *	Type rules
  *
  *	Assign:
  * 		The left side of the assignment
@@ -30,5 +34,29 @@ package icl.typing;
  *		The type of a Deref unary op is the target type of the reference.
  *
  */
-public class Typing {
+public class Mir {
+	public final Hir hir;
+	public final ValueType type;
+
+	Mir(Hir hir, ValueType type) {
+		this.hir = hir;
+		this.type = type;
+	}
+
+	@Override
+	public String toString() {
+		return "Type = " + this.type;
+	}
+
+	public static AstNode<Mir> lower(AstNode<Hir> node) {
+		var env = new Environment<ValueType>();
+		return lower(env, node);
+	}
+
+	static AstNode<Mir> lower(Environment<ValueType> env, AstNode<Hir> node) {
+		var visitor = new Visitor(env);
+		node.accept(visitor);
+		return visitor.lowered;
+	}
+
 }

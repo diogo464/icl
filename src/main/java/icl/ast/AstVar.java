@@ -1,16 +1,15 @@
 package icl.ast;
 
-public class AstVar implements AstNode {
+public class AstVar<T> extends AstNode<T> {
 	public final String name;
-	public final Location location;
 
-	public AstVar(Token token) {
-		this.name = token.image;
-		this.location = new Location(token);
+	public AstVar(T annotation, String name) {
+		super(annotation);
+		this.name = name;
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
+	public void accept(AstVisitor<T> visitor) {
 		visitor.acceptVar(this);
 	}
 

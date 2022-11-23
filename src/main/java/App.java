@@ -6,11 +6,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import icl.ast.CalcParser;
-import icl.ast.ParseException;
 import icl.frontend.interp.Interpretor;
 import icl.frontend.jvm.JvmCompiler;
-import icl.utils.PrettyPrinter;
+import icl.frontend.print.PrettyPrinter;
+import icl.mir.Mir;
+import icl.parser.ParseException;
+import icl.parser.Parser;
 
 public class App {
 	public static void main(String[] args) throws ParseException, IOException {
@@ -46,9 +47,8 @@ public class App {
 		var source = source_str.getBytes();
 		System.out.println("SOURCE\n'" + source_str + "'");
 
-		var parser = new CalcParser(new ByteArrayInputStream(source));
-		var node = parser.Start();
-		var compiled_classes = JvmCompiler.compile(node);
+		var node = Parser.parse(new ByteArrayInputStream(source));
+		var compiled_classes = JvmCompiler.compile(Mir.lower(node));
 
 		for (var compiled_class : compiled_classes) {
 			var class_name = compiled_class.name;
@@ -61,24 +61,22 @@ public class App {
 
 	private static void commandPrint(String[] args) throws FileNotFoundException, ParseException {
 		var source_stream = getFileStream(args[0]);
-		var parser = new CalcParser(source_stream);
-		var node = parser.Start();
-		node.accept(new PrettyPrinter());
+		var node = Parser.parse(source_stream);
+		var output = PrettyPrinter.printToString(Mir.lower(node), true);
+		System.out.print(output);
 	}
 
 	private static void commandRun(String[] args) throws FileNotFoundException, ParseException {
 		var source_stream = getFileStream(args[0]);
-		var parser = new CalcParser(source_stream);
-		var node = parser.Start();
-		var value = Interpretor.interpret(node);
+		var node = Parser.parse(source_stream);
+		var value = Interpretor.interpret(Mir.lower(node));
 		System.out.println(value);
 	}
 
 	private static void commandInteractive() throws ParseException {
-		var parser = new CalcParser(System.in);
 		while (true) {
-			var node = parser.Start();
-			var result = Interpretor.interpret(node);
+			var node = Parser.parse(System.in);
+			var result = Interpretor.interpret(Mir.lower(node));
 			System.out.println("Result = " + result);
 		}
 	}

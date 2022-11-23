@@ -1,20 +1,19 @@
 package icl.ast;
 
-public class AstDecl implements AstNode {
+public class AstDecl<T> extends AstNode<T> {
 	public final String name;
-	public final AstNode value;
-	public final Location location;
+	public final AstNode<T> value;
 	public final boolean mutable;
 
-	public AstDecl(Token name, AstNode value, boolean mutable) {
-		this.name = name.image;
+	public AstDecl(T annotation, String name, AstNode<T> value, boolean mutable) {
+		super(annotation);
+		this.name = name;
 		this.value = value;
-		this.location = new Location(name);
 		this.mutable = mutable;
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
+	public void accept(AstVisitor<T> visitor) {
 		visitor.acceptDecl(this);
 	}
 

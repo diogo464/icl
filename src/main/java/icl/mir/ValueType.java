@@ -1,4 +1,4 @@
-package icl.hir;
+package icl.mir;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +26,11 @@ public class ValueType {
 			var otherr = (Reference) other;
 			return Objects.equals(this.target, otherr.target);
 		}
+
+		@Override
+		public String toString() {
+			return "Ref[" + this.target + "]";
+		}
 	};
 
 	public static class Function {
@@ -43,6 +48,23 @@ public class ValueType {
 				return false;
 			var otherf = (Function) other;
 			return Objects.equals(this.ret, otherf.ret) && Objects.equals(this.args, otherf.args);
+		}
+
+		@Override
+		public String toString() {
+			var builder = new StringBuilder();
+			builder.append("Fun[");
+			builder.append(this.ret);
+			builder.append(",[");
+			boolean comma = false;
+			for (var arg : this.args) {
+				builder.append(arg);
+				if (comma)
+					builder.append(",");
+				comma = true;
+			}
+			builder.append("]]");
+			return builder.toString();
 		}
 	};
 
@@ -68,6 +90,10 @@ public class ValueType {
 		this.function = function;
 	}
 
+	public Kind getKind() {
+		return this.kind;
+	}
+
 	public boolean isKind(Kind kind) {
 		return this.kind.equals(kind);
 	}
@@ -91,6 +117,15 @@ public class ValueType {
 		var otherv = (ValueType) other;
 		return Objects.equals(this.kind, otherv.kind) && Objects.equals(this.reference, otherv.reference)
 				&& Objects.equals(this.function, otherv.function);
+	}
+
+	@Override
+	public String toString() {
+		if (this.reference != null)
+			return this.reference.toString();
+		if (this.function != null)
+			return this.function.toString();
+		return this.kind.toString();
 	}
 
 	public static ValueType createVoid() {

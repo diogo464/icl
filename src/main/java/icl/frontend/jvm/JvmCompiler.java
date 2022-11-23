@@ -2,6 +2,9 @@ package icl.frontend.jvm;
 
 import java.util.List;
 
+import icl.ast.AstNode;
+import icl.mir.Mir;
+
 public class JvmCompiler {
 	public static class CompiledClass {
 		public final String name;
@@ -13,9 +16,8 @@ public class JvmCompiler {
 		}
 	}
 
-	public static List<CompiledClass> compile(icl.ast.AstNode node) {
-		var visitor = new Visitor();
-		node.accept(visitor);
-		return visitor.finish();
+	public static List<CompiledClass> compile(AstNode<Mir> node) {
+
+		return null;
 	}
 }

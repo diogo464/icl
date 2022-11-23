@@ -1,4 +1,4 @@
-package icl.ast;
+package icl.hir;
 
 public class Location {
 	public final int beginLine;
@@ -6,14 +6,15 @@ public class Location {
 	public final int beginColumn;
 	public final int endColumn;
 
-	Location(Token token) {
-		this(token.beginLine, token.endLine, token.beginColumn, token.endColumn);
+	public Location() {
+		this(0, 0, 0, 0);
 	}
 
-	Location(int beginLine, int endLine, int beginColumn, int endColumn) {
+	public Location(int beginLine, int endLine, int beginColumn, int endColumn) {
 		this.beginLine = beginLine;
 		this.endLine = endLine;
 		this.beginColumn = beginColumn;
 		this.endColumn = endColumn;
 	}
+
 }

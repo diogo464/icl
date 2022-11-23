@@ -1,16 +1,15 @@
 package icl.ast;
 
-public class AstNum implements AstNode {
+public class AstNum<T> extends AstNode<T> {
 	public final short value;
-	public final Location location;
 
-	public AstNum(Token num) {
-		this.value = Short.parseShort(num.image);
-		this.location = new Location(num);
+	public AstNum(T annotation, short value) {
+		super(annotation);
+		this.value = value;
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
+	public void accept(AstVisitor<T> visitor) {
 		visitor.acceptNum(this);
 	}
 }

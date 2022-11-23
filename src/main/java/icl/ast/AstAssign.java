@@ -1,18 +1,17 @@
 package icl.ast;
 
-public class AstAssign implements AstNode {
+public class AstAssign<T> extends AstNode<T> {
 	public final String name;
-	public final AstNode value;
-	public final Location location;
+	public final AstNode<T> value;
 
-	public AstAssign(Token token, AstNode value) {
-		this.name = token.image;
+	public AstAssign(T annotation, String name, AstNode<T> value) {
+		super(annotation);
+		this.name = name;
 		this.value = value;
-		this.location = new Location(token);
 	}
 
 	@Override
-	public void accept(AstVisitor visitor) {
-		// TODO: assignement visitor
+	public void accept(AstVisitor<T> visitor) {
+		visitor.acceptAssign(this);
 	}
 }
