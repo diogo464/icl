@@ -7,6 +7,7 @@ import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNew;
@@ -17,8 +18,8 @@ import icl.ast.AstScope;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
-import icl.frontend.interp.Interpretor;
 import icl.hir.Hir;
+import icl.type.ValueType;
 import icl.utils.CalcUtils;
 
 class Visitor implements AstVisitor<Hir> {
@@ -109,13 +110,15 @@ class Visitor implements AstVisitor<Hir> {
 		var annotation = new Mir(node.annotation, ValueType.createVoid());
 		this.environment.define(node.name, value.annotation.type);
 		this.lowered = new AstDecl<>(annotation, node.name, value, node.mutable);
+		System.out.println("Defining '" + node.name + "'");
+		System.out.println(this.environment);
 	}
 
 	@Override
 	public void acceptScope(AstScope<Hir> node) {
 		var env = this.environment.beginScope();
 		var stmts = node.stmts.stream().map(n -> Mir.lower(env, n)).toList();
-		var expr = Mir.lower(node.expr);
+		var expr = Mir.lower(env, node.expr);
 		var annotation = new Mir(node.annotation, expr.annotation.type);
 		this.lowered = new AstScope<>(annotation, stmts, expr);
 	}
@@ -130,16 +133,36 @@ class Visitor implements AstVisitor<Hir> {
 	public void acceptVar(AstVar<Hir> node) {
 		var type = this.environment.lookup(node.name);
 		if (type == null)
-			throw new RuntimeException("Failed to lookup name to obtain type information: '" + node.name + "'");
+			throw new RuntimeException(
+					"Failed to lookup name to obtain type information: '" + node.name + "'\n" + this.environment);
 		var annotation = new Mir(node.annotation, type);
 		this.lowered = new AstVar<>(annotation, node.name);
 	}
 
 	@Override
 	public void acceptCall(AstCall<Hir> call) {
-		var function = Mir.lower(call.function);
+		var function = Mir.lower(this.environment, call.function);
 		var arguments = call.arguments.stream().map(n -> Mir.lower(this.environment, n)).toList();
-		throw new RuntimeException("TODO: acceptCall in MIR visitor");
+		if (!function.annotation.type.isKind(ValueType.Kind.Function))
+			throw new RuntimeException("Attempt to call non-function");
+
+		var ftype = function.annotation.type.getFunction();
+		if (arguments.size() != ftype.args.size())
+			throw new RuntimeException("Function call argument count missmatch");
+
+		for (var i = 0; i < ftype.args.size(); ++i) {
+			var farg = ftype.args.get(i);
+			var arg = arguments.get(i).annotation.type;
+			if (farg.equals(arg))
+				continue;
+
+			throw new RuntimeException("Function call argument " + i + " missmatch: Expected " + farg.toString()
+					+ " but got " + arg.toString());
+		}
+
+		assert ftype.ret != null;
+		var annotation = new Mir(call.annotation, ftype.ret);
+		this.lowered = new AstCall<>(annotation, function, arguments);
 	}
 
 	@Override
@@ -189,6 +212,8 @@ class Visitor implements AstVisitor<Hir> {
 
 	@Override
 	public void acceptPrint(AstPrint<Hir> print) {
+		System.out.println("acceptPrint Environment");
+		System.out.println(this.environment);
 		var expr = Mir.lower(this.environment, print.expr);
 		var annotation = new Mir(print.annotation, ValueType.createVoid());
 		this.lowered = new AstPrint<>(annotation, expr);
@@ -200,6 +225,21 @@ class Visitor implements AstVisitor<Hir> {
 		var reftype = ValueType.createReference(value.annotation.type);
 		var annotation = new Mir(anew.annotation, reftype);
 		this.lowered = new AstNew<>(annotation, value);
+	}
+
+	@Override
+	public void acceptFn(AstFn<Hir> fn) {
+		var bodyenv = this.environment.beginScope();
+		for (var arg : fn.arguments)
+			bodyenv.define(arg.name, arg.type);
+		var body = Mir.lower(bodyenv, fn.body);
+		if (fn.ret.isPresent())
+			if (!fn.ret.get().equals(body.annotation.type))
+				throw new RuntimeException("Function return type does not match body type");
+		var argtypes = fn.arguments.stream().map(a -> a.type).toList();
+		var type = ValueType.createFunction(argtypes, body.annotation.type);
+		var annotation = new Mir(fn.annotation, type);
+		this.lowered = new AstFn<>(annotation, fn.arguments, fn.ret, body);
 	}
 
 }

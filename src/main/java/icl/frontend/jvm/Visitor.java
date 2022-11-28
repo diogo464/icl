@@ -15,6 +15,7 @@ import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNew;
@@ -194,6 +195,12 @@ class Visitor implements AstVisitor<Mir> {
 
 	@Override
 	public void acceptNew(AstNew<Mir> anew) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void acceptFn(AstFn<Mir> fn) {
 		// TODO Auto-generated method stub
 
 	}

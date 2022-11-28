@@ -6,6 +6,7 @@ import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNew;
@@ -125,7 +126,16 @@ class Visitor<T> implements AstVisitor<T> {
 
 	@Override
 	public void acceptCall(AstCall<T> call) {
-		throw new UnsupportedOperationException();
+		call.function.accept(this);
+		print("(");
+		boolean printComma = false;
+		for (var arg : call.arguments) {
+			if (printComma)
+				print(",");
+			arg.accept(this);
+			printComma = true;
+		}
+		print(")");
 	}
 
 	@Override
@@ -176,6 +186,17 @@ class Visitor<T> implements AstVisitor<T> {
 	public void acceptNew(AstNew<T> anew) {
 		print("new ");
 		anew.value.accept(this);
+	}
+
+	@Override
+	public void acceptFn(AstFn<T> fn) {
+		print("fn(");
+		for (var arg : fn.arguments)
+			print(arg.name, ": ", arg.type.toString());
+		print(")");
+		if (fn.ret.isPresent())
+			print(" -> ", fn.ret.get().toString());
+		fn.body.accept(this);
 	}
 
 }

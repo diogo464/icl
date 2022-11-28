@@ -28,4 +28,6 @@ public interface AstVisitor<T> {
 	void acceptPrint(AstPrint<T> print);
 
 	void acceptNew(AstNew<T> anew);
+
+	void acceptFn(AstFn<T> fn);
 }

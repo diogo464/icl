@@ -1,4 +1,4 @@
-package icl.mir;
+package icl.type;
 
 import java.util.List;
 import java.util.Objects;
@@ -8,6 +8,7 @@ public class ValueType {
 		Void,
 		Boolean,
 		Number,
+		String,
 		Reference,
 		Function
 	};
@@ -34,10 +35,10 @@ public class ValueType {
 	};
 
 	public static class Function {
-		public final ValueType ret;
 		public final List<ValueType> args;
+		public final ValueType ret;
 
-		private Function(ValueType ret, List<ValueType> args) {
+		private Function(List<ValueType> args, ValueType ret) {
 			this.ret = ret;
 			this.args = args;
 		}
@@ -140,12 +141,28 @@ public class ValueType {
 		return new ValueType(Kind.Number);
 	}
 
+	public static ValueType createString() {
+		return new ValueType(Kind.String);
+	}
+
 	public static ValueType createReference(ValueType target) {
 		return new ValueType(new Reference(target));
 	}
 
-	public static ValueType createFunction(ValueType ret, List<ValueType> args) {
-		return new ValueType(new Function(ret, args));
+	public static ValueType createFunction(List<ValueType> args, ValueType ret) {
+		return new ValueType(new Function(args, ret));
 	}
 
+	public static ValueType parse(String string) {
+		if (string.equals("int"))
+			return ValueType.createNumber();
+		else if (string.equals("bool"))
+			return ValueType.createBoolean();
+		else if (string.equals("string"))
+			return ValueType.createString();
+		else if (string.startsWith("&"))
+			return ValueType.createReference(parse(string.substring(1)));
+		else
+			throw new IllegalArgumentException("Invalid type: '" + string + "'");
+	}
 }

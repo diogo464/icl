@@ -8,6 +8,7 @@ import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNew;
@@ -138,8 +139,18 @@ class Visitor implements AstVisitor<Mir> {
 
 	@Override
 	public void acceptCall(AstCall<Mir> call) {
-		// TODO: implement function call for interpretor
-		throw new RuntimeException();
+		var fnvalue = Interpretor.interpret(this.environment, call.function).getFunction();
+		var callenv = fnvalue.env.beginScope();
+		System.out.println("Argument count = " + call.arguments.size());
+		for (var i = 0; i < call.arguments.size(); ++i) {
+			var farg = fnvalue.args.get(i);
+			var arg = call.arguments.get(i);
+			var argvalue = Interpretor.interpret(this.environment, arg);
+			System.out.println("Call define: " + farg.name);
+			callenv.define(farg.name, argvalue);
+		}
+		var retvalue = Interpretor.interpret(callenv, fnvalue.body);
+		this.value = retvalue;
 	}
 
 	@Override
@@ -186,6 +197,15 @@ class Visitor implements AstVisitor<Mir> {
 		var value = Interpretor.interpret(this.environment, anew.value);
 		var refvalue = Value.createReference(value);
 		this.value = refvalue;
+	}
+
+	@Override
+	public void acceptFn(AstFn<Mir> fn) {
+		var type = fn.annotation.type;
+		var env = this.environment.beginScope();
+		var body = fn.body;
+		var fnvalue = Value.createFunction(type, env, fn.arguments, body);
+		this.value = fnvalue;
 	}
 
 }

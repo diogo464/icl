@@ -3,6 +3,7 @@ package icl.mir;
 import icl.Environment;
 import icl.ast.AstNode;
 import icl.hir.Hir;
+import icl.type.ValueType;
 
 /*-
  *	Type rules
@@ -48,7 +49,7 @@ public class Mir {
 		return "Type = " + this.type;
 	}
 
-	public static AstNode<Mir> lower(AstNode<Hir> node) {
+	public static AstNode<Mir> toMir(AstNode<Hir> node) {
 		var env = new Environment<ValueType>();
 		return lower(env, node);
 	}

@@ -7,6 +7,7 @@ PARSER_BEGIN(CalcParser)
 package icl.parser;
 import icl.hir.*;
 import icl.ast.*;
+import icl.type.*;
 
 import java.util.ArrayList;
 
@@ -35,9 +36,14 @@ TOKEN :
 	< KW_PRINT	: "print"											> |
 	< KW_PRINTLN: "println"											> |
 	< KW_NEW	: "new"												> |
+	< TYPE_INT	: "int"												> |
+	< TYPE_BOOL	: "bool"											> |
+	< TYPE_STR	: "str"												> |
+	< TYPE_VOID	: "void"											> |
 	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM		: ((["0"-"9"])+)									> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
+	< MULTIAMP	: (["&"])+											> |
 	< COMMA		: "," 												> |
 	< PLUS		: "+" 												> |
 	< MINUS		: "-" 												> |
@@ -47,6 +53,7 @@ TOKEN :
 	< RPAREN	: ")"												> |
 	< LBRACK	: "{"												> |
 	< RBRACK	: "}"												> |
+	< COL		: ":"												> |
 	< SEMICOL	: ";"												> |
 	< EQ		: "="												> |
 	< CMP		: "=="												> |
@@ -58,7 +65,8 @@ TOKEN :
 	< LOR		: "||"												> |
 	< LNOT		: "~"												> |
 	< DEREF		: "!"												> |
-	< ASSIGN	: ":="												>
+	< ASSIGN	: ":="												> |
+	< ARROW		: "->"												>
 }
 
 AstNode<Hir> Start():
@@ -96,10 +104,11 @@ AstNode<Hir> StmtDecl():
 {
 	Token mut = null;
 	Token ident = null;
+	ValueType type = null;
 	AstNode<Hir> exp = null;
 }
 {
-	<KW_LET> (mut = <KW_MUT>)? (ident = <IDENT>) <EQ> (exp = Expr()) <SEMICOL>
+	<KW_LET> (mut = <KW_MUT>)? (ident = <IDENT>) (<COL> type = ValueType())? <EQ> (exp = Expr()) <SEMICOL>
 	{ return Parser.astDecl(ident, exp, mut != null); }
 }
 
@@ -185,9 +194,9 @@ AstNode<Hir> ExprLAnd():
 }
 {
 	l = ExprCmp() ( 
-		(op = <LAND>) r = ExprCmp()
+		(op = <MULTIAMP>) r = ExprCmp()
 		{ 
-			if( op != null ) {
+			if( op != null && op.image.length() == 2 ) {
 				l = Parser.astBinOp(AstBinOp.Kind.LAND, l, r);
 			}
 		}
@@ -313,6 +322,7 @@ AstNode<Hir> ExprLitParenCall():
 		n = <IDENT> { return Parser.astVar(n); }				|
 		n = <STRLIT> { return Parser.astStr(n); } 				|
 		n = <KW_NEW> t = Expr() { return Parser.astNew(n,t); } 	|
+		t = ExprFn() { return t; } 								|
 		<LPAREN> t = Expr() <RPAREN>
 		(<LPAREN>
 			(argument = Expr() {arguments.add(argument);})
@@ -320,4 +330,52 @@ AstNode<Hir> ExprLitParenCall():
 		<RPAREN> {return Parser.astCall(t, arguments); })?
 		{ return t; }
 	)
+}
+
+AstNode<Hir> ExprFn():
+{
+	var n 			= (Token) null;
+	var name 		= (Token) null;
+	var type	 	= (ValueType) null;
+	var args 		= new ArrayList<AstFn.Arg>();
+	var body  		= (AstNode<Hir>) null;
+}
+{
+	n = <KW_FN> <LPAREN>
+		(
+			name = <IDENT> <COL> type = ValueType() { args.add(new AstFn.Arg(name.image, type)); }
+			(<COMMA> name = <IDENT> <COL> type = ValueType() { args.add(new AstFn.Arg(name.image, type)); })*
+		)?
+	{ type = null; }
+	<RPAREN> (<ARROW> type = ValueType())? body = ExprBlock()
+	{ return Parser.astFn(n, args, type, body); }
+}
+
+ValueType ValueType():
+{
+	var n = (Token) null;
+	var type = (ValueType) null;
+	var arguments = new ArrayList<ValueType>();
+	var returntype = (ValueType) null;
+}
+{
+	<TYPE_INT> { return ValueType.createNumber(); } 	|
+	<TYPE_BOOL> { return ValueType.createBoolean(); } 	|
+	<TYPE_STR> { return ValueType.createString(); } 	|
+	<TYPE_VOID> { return ValueType.createVoid(); } 		|
+	n = <MULTIAMP> type = ValueType() 
+		{
+			ValueType ref = type;
+			for(var i = 0; i < n.image.length(); ++i)
+				ref = ValueType.createReference(ref);
+			type = ref;
+			return type;
+		} |
+	<KW_FN> <LPAREN> 
+		(
+			type = ValueType() {arguments.add(type);}
+			(<COMMA> type = ValueType() {arguments.add(type);})*
+		)?
+	<RPAREN> (<ARROW> returntype = ValueType())?
+		{ return ValueType.createFunction(arguments, returntype); }
 }

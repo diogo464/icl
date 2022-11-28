@@ -48,7 +48,7 @@ public class App {
 		System.out.println("SOURCE\n'" + source_str + "'");
 
 		var node = Parser.parse(new ByteArrayInputStream(source));
-		var compiled_classes = JvmCompiler.compile(Mir.lower(node));
+		var compiled_classes = JvmCompiler.compile(Mir.toMir(node));
 
 		for (var compiled_class : compiled_classes) {
 			var class_name = compiled_class.name;
@@ -62,21 +62,21 @@ public class App {
 	private static void commandPrint(String[] args) throws FileNotFoundException, ParseException {
 		var source_stream = getFileStream(args[0]);
 		var node = Parser.parse(source_stream);
-		var output = PrettyPrinter.printToString(Mir.lower(node), true);
+		var output = PrettyPrinter.printToString(Mir.toMir(node), true);
 		System.out.print(output);
 	}
 
 	private static void commandRun(String[] args) throws FileNotFoundException, ParseException {
 		var source_stream = getFileStream(args[0]);
 		var node = Parser.parse(source_stream);
-		var value = Interpretor.interpret(Mir.lower(node));
+		var value = Interpretor.interpret(Mir.toMir(node));
 		System.out.println(value);
 	}
 
 	private static void commandInteractive() throws ParseException {
 		while (true) {
 			var node = Parser.parse(System.in);
-			var result = Interpretor.interpret(Mir.lower(node));
+			var result = Interpretor.interpret(Mir.toMir(node));
 			System.out.println("Result = " + result);
 		}
 	}

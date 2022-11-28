@@ -43,4 +43,19 @@ public class Environment<T> {
 			return this.parent.lookup(name);
 		return null;
 	}
+
+	@Override
+	public String toString() {
+		var builder = new StringBuilder();
+		for (var entry : this.values.entrySet()) {
+			builder.append(entry.getKey());
+			builder.append(" = ");
+			builder.append(entry.getValue().toString());
+			builder.append("\n");
+		}
+		builder.append("-----------------");
+		if (this.parent != null)
+			builder.append(this.parent.toString());
+		return builder.toString();
+	}
 }

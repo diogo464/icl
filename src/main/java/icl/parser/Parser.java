@@ -1,11 +1,14 @@
 package icl.parser;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import icl.ast.*;
 import icl.hir.Hir;
 import icl.hir.Location;
+import icl.type.ValueType;
 
 public class Parser {
 	private Parser() {
@@ -94,6 +97,18 @@ public class Parser {
 	static AstNew<Hir> astNew(Token token, AstNode<Hir> value) {
 		var annotation = annotationFromToken(token);
 		return new AstNew<>(annotation, value);
+	}
+
+	static AstFn<Hir> astFn(Token fnToken, List<AstFn.Arg> arguments, ValueType ret, AstNode<Hir> body) {
+		if (arguments == null)
+			arguments = new ArrayList<>();
+
+		var annotation = annotationFromToken(fnToken);
+		return new AstFn<>(annotation, arguments, Optional.ofNullable(ret), body);
+	}
+
+	static ValueType valueTypeFromTokens(List<Token> tokens) {
+		return ValueType.createVoid();
 	}
 
 	private static Hir annotationFromToken(Token t) {
