@@ -26,4 +26,6 @@ public interface AstVisitor<T> {
 	void acceptAssign(AstAssign<T> assign);
 
 	void acceptPrint(AstPrint<T> print);
+
+	void acceptNew(AstNew<T> anew);
 }

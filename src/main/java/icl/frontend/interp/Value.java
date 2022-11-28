@@ -58,6 +58,25 @@ public abstract class Value {
 		}
 	}
 
+	private static class RefValue extends Value {
+		public Value value;
+
+		public RefValue(ValueType type, Value value) {
+			super(type);
+			this.value = value;
+
+			assert type.equals(ValueType.createReference(value.type));
+		}
+
+		public Value getReference() {
+			return value;
+		}
+
+		public String toString() {
+			return value.toString();
+		}
+	}
+
 	private final ValueType type;
 
 	private Value(ValueType type) {
@@ -84,13 +103,25 @@ public abstract class Value {
 		throw new RuntimeException("Value is not a boolean");
 	}
 
+	public Value getReference() {
+		throw new RuntimeException("Value is not a reference");
+	}
+
+	public void setReference(Value value) {
+		throw new RuntimeException("Value is not a reference");
+	}
+
 	public void assign(Value other) {
 		if (!this.getType().equals(other.getType()))
 			throw new RuntimeException("Values are not the same type");
-		if (this.getType().getKind().equals(ValueType.Kind.Number))
+
+		var kind = this.getType().getKind();
+		if (kind == ValueType.Kind.Number)
 			this.setNumber(other.getNumber());
-		else if (this.getType().getKind().equals(ValueType.Kind.Boolean))
+		else if (kind == ValueType.Kind.Boolean)
 			this.setBoolean(other.getBoolean());
+		else if (kind == ValueType.Kind.Reference)
+			this.setReference(other.getReference());
 	}
 
 	public static Value createVoid() {
@@ -107,5 +138,9 @@ public abstract class Value {
 
 	public static Value createBoolean(boolean value) {
 		return new BooleanValue(ValueType.createBoolean(), value);
+	}
+
+	public static Value createReference(Value value) {
+		return new RefValue(ValueType.createReference(value.type), value);
 	}
 }

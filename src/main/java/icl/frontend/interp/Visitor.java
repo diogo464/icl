@@ -10,6 +10,7 @@ import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
+import icl.ast.AstNew;
 import icl.ast.AstNum;
 import icl.ast.AstPrint;
 import icl.ast.AstUnaryOp;
@@ -93,7 +94,15 @@ class Visitor implements AstVisitor<Mir> {
 					default -> throw new IllegalStateException();
 				};
 				this.value = value;
-			} // TODO: implement references
+			}
+			case Reference -> {
+				var operand = Interpretor.interpret(this.environment, node.expr);
+				var value = switch (node.kind) {
+					case DEREF -> operand.getReference();
+					default -> throw new IllegalStateException();
+				};
+				this.value = value;
+			}
 			default -> throw new IllegalStateException();
 		}
 	}
@@ -170,6 +179,13 @@ class Visitor implements AstVisitor<Mir> {
 	public void acceptPrint(AstPrint<Mir> print) {
 		var value = Interpretor.interpret(this.environment, print.expr);
 		System.out.println(value);
+	}
+
+	@Override
+	public void acceptNew(AstNew<Mir> anew) {
+		var value = Interpretor.interpret(this.environment, anew.value);
+		var refvalue = Value.createReference(value);
+		this.value = refvalue;
 	}
 
 }

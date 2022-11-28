@@ -9,6 +9,7 @@ import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
+import icl.ast.AstNew;
 import icl.ast.AstNode;
 import icl.ast.AstNum;
 import icl.ast.AstPrint;
@@ -92,7 +93,12 @@ class Visitor implements AstVisitor<Hir> {
 				var annotation = new Mir(node.annotation, type);
 				this.lowered = new AstUnaryOp<>(annotation, kind, expr);
 			}
-			// TODO: Implement reference
+			case Reference -> {
+				if (!CalcUtils.oneOf(kind, AstUnaryOp.Kind.DEREF))
+					throw new RuntimeException("Reference UnaryOp operator must be one of DEREF");
+				var annotation = new Mir(node.annotation, type.getReference().target);
+				this.lowered = new AstUnaryOp<>(annotation, kind, expr);
+			}
 			default -> throw new RuntimeException("UnaryOp operand type must be Number, Boolean or Reference");
 		}
 	}
@@ -186,6 +192,14 @@ class Visitor implements AstVisitor<Hir> {
 		var expr = Mir.lower(this.environment, print.expr);
 		var annotation = new Mir(print.annotation, ValueType.createVoid());
 		this.lowered = new AstPrint<>(annotation, expr);
+	}
+
+	@Override
+	public void acceptNew(AstNew<Hir> anew) {
+		var value = Mir.lower(this.environment, anew.value);
+		var reftype = ValueType.createReference(value.annotation.type);
+		var annotation = new Mir(anew.annotation, reftype);
+		this.lowered = new AstNew<>(annotation, value);
 	}
 
 }

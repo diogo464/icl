@@ -8,6 +8,7 @@ import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
+import icl.ast.AstNew;
 import icl.ast.AstNum;
 import icl.ast.AstPrint;
 import icl.ast.AstScope;
@@ -169,6 +170,12 @@ class Visitor<T> implements AstVisitor<T> {
 	public void acceptPrint(AstPrint<T> print) {
 		print("print ");
 		print.expr.accept(this);
+	}
+
+	@Override
+	public void acceptNew(AstNew<T> anew) {
+		print("new ");
+		anew.value.accept(this);
 	}
 
 }
