@@ -30,6 +30,10 @@ TOKEN :
 	< KW_MUT	: "mut"												> |
 	< KW_TRUE	: "true"											> |
 	< KW_FALSE	: "false"											> |
+	< KW_FN		: "fn"												> |
+	< KW_STRUCT	: "struct"											> |
+	< KW_PRINT	: "print"											> |
+	< KW_PRINTLN: "println"											> |
 	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM		: ((["0"-"9"])+)									> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
@@ -66,7 +70,7 @@ AstNode<Hir> Start():
 AstNode<Hir> Stmt():
 { AstNode<Hir> n; }
 {
-	(n = StmtAssign() | n = StmtDecl() | n = StmtWhile() )
+	(n = StmtAssign() | n = StmtDecl() | n = StmtWhile() | n = StmtPrint())
 	{ return n; }
 }
 
@@ -107,6 +111,17 @@ AstNode<Hir> StmtWhile():
 	<KW_WHILE> 	(condition = Expr()) (body = ExprBlock())? <SEMICOL>
 	{ if (body == null) { body = Parser.astEmptyNode(); } }
 	{ return Parser.astLoop(condition, body); }
+}
+
+AstNode<Hir> StmtPrint():
+{
+	var n = (Token) null;
+	var expr = (AstNode<Hir>) null;
+}
+{
+	(n = <KW_PRINT> | n = <KW_PRINTLN>) (expr = Expr())? <SEMICOL>
+	{ if (expr == null) { expr = Parser.astEmptyNode(); } }
+	{ return Parser.astPrint(n, expr); }
 }
 
 AstNode<Hir> ExprIf():

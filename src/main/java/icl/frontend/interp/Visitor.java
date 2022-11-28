@@ -11,6 +11,7 @@ import icl.ast.AstEmptyNode;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNum;
+import icl.ast.AstPrint;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
@@ -163,6 +164,12 @@ class Visitor implements AstVisitor<Mir> {
 		var value = this.environment.lookup(assign.name);
 		var new_value = Interpretor.interpret(this.environment, assign.value);
 		value.assign(new_value);
+	}
+
+	@Override
+	public void acceptPrint(AstPrint<Mir> print) {
+		var value = Interpretor.interpret(this.environment, print.expr);
+		System.out.println(value);
 	}
 
 }

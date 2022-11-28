@@ -24,4 +24,6 @@ public interface AstVisitor<T> {
 	void acceptLoop(AstLoop<T> loop);
 
 	void acceptAssign(AstAssign<T> assign);
+
+	void acceptPrint(AstPrint<T> print);
 }

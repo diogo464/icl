@@ -11,10 +11,12 @@ import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNode;
 import icl.ast.AstNum;
+import icl.ast.AstPrint;
 import icl.ast.AstScope;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
+import icl.frontend.interp.Interpretor;
 import icl.hir.Hir;
 import icl.utils.CalcUtils;
 
@@ -177,6 +179,13 @@ class Visitor implements AstVisitor<Hir> {
 			throw new RuntimeException("Cant assign variable to value of different type");
 		var annotation = new Mir(assign.annotation, ValueType.createVoid());
 		this.lowered = new AstAssign<>(annotation, assign.name, value);
+	}
+
+	@Override
+	public void acceptPrint(AstPrint<Hir> print) {
+		var expr = Mir.lower(this.environment, print.expr);
+		var annotation = new Mir(print.annotation, ValueType.createVoid());
+		this.lowered = new AstPrint<>(annotation, expr);
 	}
 
 }

@@ -9,6 +9,7 @@ import icl.ast.AstEmptyNode;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNum;
+import icl.ast.AstPrint;
 import icl.ast.AstScope;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
@@ -162,6 +163,12 @@ class Visitor<T> implements AstVisitor<T> {
 		printAnnotation(assign.annotation);
 		print(assign.name, " := ");
 		assign.value.accept(this);
+	}
+
+	@Override
+	public void acceptPrint(AstPrint<T> print) {
+		print("print ");
+		print.expr.accept(this);
 	}
 
 }

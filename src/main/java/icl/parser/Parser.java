@@ -86,6 +86,11 @@ public class Parser {
 		return new AstEmptyNode<>(annotation);
 	}
 
+	static AstPrint<Hir> astPrint(Token token, AstNode<Hir> expr) {
+		var annotation = annotationFromToken(token);
+		return new AstPrint<>(annotation, expr);
+	}
+
 	private static Hir annotationFromToken(Token t) {
 		return new Hir(locationFromToken(t));
 	}
