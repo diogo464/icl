@@ -55,6 +55,12 @@ public class Parser {
 		return new AstNum<>(annotation, value);
 	}
 
+	static AstBool<Hir> astBool(Token token) {
+		var annotation = annotationFromToken(token);
+		var value = Boolean.parseBoolean(token.image);
+		return new AstBool<>(annotation, value);
+	}
+
 	static AstScope<Hir> astScope(List<AstNode<Hir>> stmts, AstNode<Hir> expr) {
 		var annotation = expr.annotation;
 		return new AstScope<>(annotation, stmts, expr);

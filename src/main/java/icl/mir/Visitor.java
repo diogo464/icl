@@ -3,6 +3,7 @@ package icl.mir;
 import icl.Environment;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
+import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
@@ -30,6 +31,12 @@ class Visitor implements AstVisitor<Hir> {
 	public void acceptNum(AstNum<Hir> node) {
 		var annotation = new Mir(node.annotation, ValueType.createNumber());
 		this.lowered = new AstNum<>(annotation, node.value);
+	}
+
+	@Override
+	public void acceptBool(AstBool<Hir> node) {
+		var annotation = new Mir(node.annotation, ValueType.createBoolean());
+		this.lowered = new AstBool<>(annotation, node.value);
 	}
 
 	@Override

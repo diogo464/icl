@@ -10,6 +10,7 @@ import org.objectweb.asm.Opcodes;
 
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
+import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
@@ -75,6 +76,13 @@ class Visitor implements AstVisitor<Mir> {
 	public void acceptNum(AstNum<Mir> node) {
 		var value = node.value;
 		this.visitor.visitIntInsn(Opcodes.SIPUSH, value);
+	}
+
+	@Override
+	public void acceptBool(AstBool<Mir> node) {
+		var value = node.value;
+		var ivalue = value ? 1 : 0;
+		this.visitor.visitIntInsn(Opcodes.SIPUSH, ivalue);
 	}
 
 	@Override

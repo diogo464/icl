@@ -3,6 +3,8 @@ package icl.ast;
 public interface AstVisitor<T> {
 	void acceptNum(AstNum<T> node);
 
+	void acceptBool(AstBool<T> node);
+
 	void acceptBinOp(AstBinOp<T> node);
 
 	void acceptUnaryOp(AstUnaryOp<T> node);

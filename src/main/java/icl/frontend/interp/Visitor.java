@@ -3,6 +3,7 @@ package icl.frontend.interp;
 import icl.Environment;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
+import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
@@ -28,6 +29,11 @@ class Visitor implements AstVisitor<Mir> {
 	@Override
 	public void acceptNum(AstNum<Mir> node) {
 		this.value = Value.createNumber(node.value);
+	}
+
+	@Override
+	public void acceptBool(AstBool<Mir> node) {
+		this.value = Value.createBoolean(node.value);
 	}
 
 	@Override
@@ -86,7 +92,7 @@ class Visitor implements AstVisitor<Mir> {
 					default -> throw new IllegalStateException();
 				};
 				this.value = value;
-			}
+			} // TODO: implement references
 			default -> throw new IllegalStateException();
 		}
 	}

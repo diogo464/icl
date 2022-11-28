@@ -2,6 +2,7 @@ package icl.frontend.print;
 
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
+import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
@@ -48,6 +49,14 @@ class Visitor<T> implements AstVisitor<T> {
 
 	@Override
 	public void acceptNum(AstNum<T> node) {
+		print("(");
+		printAnnotation(node.annotation);
+		print(String.valueOf(node.value));
+		print(")");
+	}
+
+	@Override
+	public void acceptBool(AstBool<T> node) {
 		print("(");
 		printAnnotation(node.annotation);
 		print(String.valueOf(node.value));

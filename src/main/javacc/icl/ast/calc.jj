@@ -28,6 +28,8 @@ TOKEN :
 	< KW_ELSE	: "else"											> |
 	< KW_WHILE	: "while"											> |
 	< KW_MUT	: "mut"												> |
+	< KW_TRUE	: "true"											> |
+	< KW_FALSE	: "false"											> |
 	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
 	< NUM		: ((["0"-"9"])+)									> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
@@ -289,7 +291,9 @@ AstNode<Hir> ExprLitParenCall():
 }
 {
 	( 
-		n = <NUM> { return Parser.astNum(n); } 	|
+		n = <NUM> { return Parser.astNum(n); } 		|
+		n = <KW_TRUE> { return Parser.astBool(n); }	|
+		n = <KW_FALSE> { return Parser.astBool(n); }|
 		n = <IDENT> { return Parser.astVar(n); }	|
 		n = <STRLIT> { return Parser.astStr(n); } 	|
 		<LPAREN> t = Expr() <RPAREN>
