@@ -84,9 +84,17 @@ AstNode<Hir> Stmt():
 }
 
 AstNode<Hir> Expr():
-{ AstNode<Hir> n; }
+{ 
+	var n = (AstNode<Hir>) null; 
+	var argument = (AstNode<Hir>) null;
+	var arguments = new ArrayList<AstNode<Hir>>();
+}
 {
 	(n = ExprBlock() | n = ExprLOr() | n = ExprIf())
+	(<LPAREN>
+		(argument = Expr() {arguments.add(argument);})
+		(<COMMA> argument = Expr() {arguments.add(argument);})*
+	<RPAREN> {return Parser.astCall(n, arguments); })?
 	{ return n; }
 }
 
@@ -322,13 +330,8 @@ AstNode<Hir> ExprLitParenCall():
 		n = <IDENT> { return Parser.astVar(n); }				|
 		n = <STRLIT> { return Parser.astStr(n); } 				|
 		n = <KW_NEW> t = Expr() { return Parser.astNew(n,t); } 	|
-		t = ExprFn() { return t; } 								|
-		<LPAREN> t = Expr() <RPAREN>
-		(<LPAREN>
-			(argument = Expr() {arguments.add(argument);})
-			(<COMMA> argument = Expr() {arguments.add(argument);})*
-		<RPAREN> {return Parser.astCall(t, arguments); })?
-		{ return t; }
+		t = ExprFn() { return t; }								|
+		<LPAREN> t = Expr() <RPAREN> { return t; }
 	)
 }
 
