@@ -9,6 +9,7 @@ import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
+import icl.ast.AstStr;
 import icl.ast.AstTypeAlias;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstField;
@@ -43,6 +44,11 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptBool(AstBool node) {
 		this.value = Value.createBoolean(node.value);
+	}
+
+	@Override
+	public void acceptStr(AstStr str) {
+		this.value = Value.createString(str.value);
 	}
 
 	@Override

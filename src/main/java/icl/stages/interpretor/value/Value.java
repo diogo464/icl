@@ -84,6 +84,10 @@ public abstract class Value {
 		return new BooleanValue(ValueType.createBoolean(), value);
 	}
 
+	public static Value createString(String value) {
+		return new StringValue(ValueType.createString(), value);
+	}
+
 	public static Value createReference(Value value) {
 		return new RefValue(ValueType.createReference(value.type), value);
 	}

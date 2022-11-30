@@ -9,7 +9,7 @@ public class AstStr extends AstNode {
 
 	@Override
 	public void accept(AstVisitor visitor) {
-		throw new RuntimeException("Trying to visit a string literal");
+		visitor.acceptStr(this);
 	}
 
 }

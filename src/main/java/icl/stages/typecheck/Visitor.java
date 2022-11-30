@@ -18,6 +18,7 @@ import icl.ast.AstNum;
 import icl.ast.AstPrint;
 import icl.ast.AstRecord;
 import icl.ast.AstScope;
+import icl.ast.AstStr;
 import icl.ast.AstTypeAlias;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
@@ -40,6 +41,11 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptBool(AstBool node) {
 		node.annotate(TypeCheckStage.TYPE_KEY, ValueType.createBoolean());
+	}
+
+	@Override
+	public void acceptStr(AstStr str) {
+		str.annotate(TypeCheckStage.TYPE_KEY, ValueType.createString());
 	}
 
 	@Override

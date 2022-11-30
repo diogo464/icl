@@ -91,8 +91,8 @@ public class Parser {
 		return node;
 	}
 
-	static AstStr astStr(Span span, String string) {
-		var node = new AstStr(string);
+	static AstStr astStr(Span span, String image) {
+		var node = new AstStr(image.substring(1, image.length() - 1));
 		node.annotate(SPAN_KEY, span);
 		return node;
 	}

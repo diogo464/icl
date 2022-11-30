@@ -5,6 +5,8 @@ public interface AstVisitor {
 
 	void acceptBool(AstBool node);
 
+	void acceptStr(AstStr node);
+
 	void acceptBinOp(AstBinOp node);
 
 	void acceptUnaryOp(AstUnaryOp node);

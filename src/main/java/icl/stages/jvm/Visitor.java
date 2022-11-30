@@ -14,6 +14,7 @@ import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
+import icl.ast.AstStr;
 import icl.ast.AstTypeAlias;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstField;
@@ -89,6 +90,11 @@ class Visitor implements AstVisitor {
 		var value = node.value;
 		var ivalue = value ? 1 : 0;
 		this.visitor.visitIntInsn(Opcodes.SIPUSH, ivalue);
+	}
+
+	@Override
+	public void acceptStr(AstStr str) {
+		// TODO: Implement
 	}
 
 	@Override

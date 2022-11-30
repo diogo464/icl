@@ -15,6 +15,7 @@ import icl.ast.AstNum;
 import icl.ast.AstPrint;
 import icl.ast.AstRecord;
 import icl.ast.AstScope;
+import icl.ast.AstStr;
 import icl.ast.AstTypeAlias;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
@@ -64,6 +65,13 @@ class Visitor implements AstVisitor {
 	public void acceptBool(AstBool node) {
 		print("(");
 		print(String.valueOf(node.value));
+		print(")");
+	}
+
+	@Override
+	public void acceptStr(AstStr str) {
+		print("(");
+		print(str.value);
 		print(")");
 	}
 
