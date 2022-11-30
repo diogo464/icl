@@ -77,79 +77,71 @@ AstNode Start():
 	{ return t; }
 }
 
-AstNode Stmt():
-{ AstNode n; }
-{
-	(
-		n = StmtAssign() 	|
-		n = StmtDecl() 		|
-		n = StmtWhile() 	|
-		n = StmtPrint()		|
-		n = StmtTypeAlias()
-	)
-	{ return n; }
-}
-
 AstNode Expr():
 { 
 	var n 			= (AstNode) null; 
 }
 {
-	(n = ExprBlock() | n = ExprLOr() | n = ExprIf())
+	(
+		n = ExprBlock() 	|
+		n = ExprLOr() 		|
+		n = ExprIf()		|
+		n = ExprAssign()	|
+		n = ExprDecl()		|
+		n = ExprWhile()		|
+		n = ExprPrint()		|
+		n = ExprTypeAlias()
+	)
 	{ return n; }
 }
 
-AstNode StmtAssign():
+AstNode ExprAssign():
 {
 	var name 		= (Token) null;	
 	var exp	 		= (AstNode) null;
-	var endToken 	= (Token) null;
 }
 {
-	(name = <IDENT>) <ASSIGN> (exp = Expr()) (endToken = <SEMICOL>)
-	{ return Parser.astAssign(Parser.span(name, endToken), name.image, exp); }
+	(name = <IDENT>) <ASSIGN> (exp = Expr())
+	{ return Parser.astAssign(Parser.span(name, exp), name.image, exp); }
 }
 
-AstNode StmtDecl():
+AstNode ExprDecl():
 {
 	var beginToken 	= (Token) null;
-	var endToken 	= (Token) null;
 	var mut 		= (Token) null;
 	var ident 		= (Token) null;
 	ValueType type 	= null;
 	AstNode exp 	= null;
 }
 {
-	(beginToken = <KW_LET>) (mut = <KW_MUT>)? (ident = <IDENT>) (<COL> type = ValueType())? <EQ> (exp = Expr()) (endToken = <SEMICOL>)
-	{ return Parser.astDecl(Parser.span(beginToken, endToken), ident.image, exp, mut != null, type); }
+	(beginToken = <KW_LET>) (mut = <KW_MUT>)? (ident = <IDENT>) (<COL> type = ValueType())? <EQ> (exp = Expr())
+	{ return Parser.astDecl(Parser.span(beginToken, exp), ident.image, exp, mut != null, type); }
 }
 
-AstNode StmtWhile():
+AstNode ExprWhile():
 {
 	var beginToken 	= (Token) null;
-	var endToken 	= (Token) null;
 	var condition 	= (AstNode) null;
 	var body 		= (AstNode) null;
 }
 {
-	(beginToken = <KW_WHILE>) (condition = Expr()) (body = ExprBlock())? (endToken = <SEMICOL>)
-	{ if (body == null) { body = Parser.astEmptyNode(Parser.span(endToken)); } }
-	{ return Parser.astLoop(Parser.span(beginToken, endToken), condition, body); }
+	(beginToken = <KW_WHILE>) (condition = Expr()) (body = ExprBlock())?
+	{ if (body == null) { body = Parser.astEmptyNode(Parser.span(condition)); } }
+	{ return Parser.astLoop(Parser.span(beginToken, body == null ? condition : body), condition, body); }
 }
 
-AstNode StmtPrint():
+AstNode ExprPrint():
 {
 	var n 			= (Token) null;
-	var endToken 	= (Token) null;
 	var expr 		= (AstNode) null;
 }
 {
-	(n = <KW_PRINT> | n = <KW_PRINTLN>) (expr = Expr())? (endToken = <SEMICOL>)
-	{ if (expr == null) { expr = Parser.astEmptyNode(Parser.span(endToken)); } }
-	{ return Parser.astPrint(Parser.span(n, endToken), expr); }
+	(n = <KW_PRINT> | n = <KW_PRINTLN>) (expr = Expr())?
+	{ if (expr == null) { expr = Parser.astEmptyNode(Parser.span(n)); } }
+	{ return Parser.astPrint(Parser.span(n, expr), expr); }
 }
 
-AstNode StmtTypeAlias():
+AstNode ExprTypeAlias():
 {
 	var beginToken 	= (Token) null;
 	var identToken	= (Token) null;
@@ -160,7 +152,6 @@ AstNode StmtTypeAlias():
 	identToken = <IDENT>
 	<EQ>
 	valueType = ValueType()
-	<SEMICOL>
 	{ return Parser.astTypeAlias(Parser.span(beginToken, identToken), identToken.image, valueType); }
 }
 
@@ -185,15 +176,29 @@ AstNode ExprBlock():
 { 
 	var beginToken 	= (Token) null;
 	var endToken 	= (Token) null;
-	var stmt 		= (AstNode) null;
+	var expr 		= (AstNode) null;
 	var body 		= (AstNode) null;
+	var semicol 	= (Token) null;
 	var stmts 		= new ArrayList<AstNode>();
 }
 {
 	( 
 		(beginToken = <LBRACK>)
-			(stmt = Stmt() { stmts.add(stmt); })*
-			(body = Expr())?
+		(
+			{semicol = null;}
+			expr = Expr()
+			(semicol = <SEMICOL>)?
+			{
+				if(semicol == null && body == null)
+					body = expr;
+				else if(semicol != null && body != null)
+					throw new RuntimeException("Statement cannot follow last expression in block");
+				else if(semicol == null && body != null)
+					throw new RuntimeException("Expression cannot follow last expression in block");
+				else
+					stmts.add(expr);
+			}
+		)*
 		(endToken = <RBRACK>)
 	)
 	{ 

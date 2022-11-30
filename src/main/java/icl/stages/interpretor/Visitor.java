@@ -180,12 +180,14 @@ class Visitor implements AstVisitor {
 		var value = this.environment.lookup(assign.name);
 		var new_value = InterpretorStage.interpret(this.environment, assign.value);
 		value.assign(new_value);
+		this.value = Value.createVoid();
 	}
 
 	@Override
 	public void acceptPrint(AstPrint print) {
 		var value = InterpretorStage.interpret(this.environment, print.expr);
 		System.out.println(value);
+		this.value = Value.createVoid();
 	}
 
 	@Override
