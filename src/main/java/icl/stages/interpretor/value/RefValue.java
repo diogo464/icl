@@ -16,6 +16,10 @@ public class RefValue extends Value {
         return this.value;
     }
 
+    public ValueType getTarget() {
+        return this.value.getType();
+    }
+
     @Override
     public String toString() {
         return value.toString();

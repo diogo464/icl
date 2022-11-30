@@ -51,7 +51,8 @@ public abstract class Value {
 	}
 
 	public final void assign(Value other) {
-		if (!this.getType().equals(other.getType()))
+		if ((this instanceof RefValue && !this.getReference().getTarget().equals(other.getType()))
+				|| (!(this instanceof RefValue) && !this.getType().equals(other.getType())))
 			throw new RuntimeException("Values are not the same type");
 
 		if (this instanceof NumberValue) {
@@ -59,7 +60,7 @@ public abstract class Value {
 		} else if (this instanceof BooleanValue) {
 			((BooleanValue) this).value = ((BooleanValue) other).value;
 		} else if (this instanceof RefValue) {
-			((RefValue) this).value = ((RefValue) other).value;
+			((RefValue) this).value.assign(other);
 		} else if (this instanceof FnValue) {
 			((FnValue) this).env = ((FnValue) other).env;
 			((FnValue) this).args = ((FnValue) other).args;

@@ -84,9 +84,9 @@ AstNode Expr():
 {
 	(
 		n = ExprBlock() 	|
+		n = ExprAssign()	|
 		n = ExprLOr() 		|
 		n = ExprIf()		|
-		n = ExprAssign()	|
 		n = ExprDecl()		|
 		n = ExprWhile()		|
 		n = ExprPrint()		|

@@ -205,7 +205,9 @@ class Visitor implements AstVisitor {
 		if (vartype == null)
 			throw new TypeCheckException("Failed to lookup variable: '" + assign.name + "'", assign);
 		var value = TypeCheckStage.check(this.env, assign.value);
-		if (!vartype.equals(value.getAnnotation(TypeCheckStage.TYPE_KEY)))
+		if ((!vartype.isKind(ValueType.Kind.Reference) && !vartype.equals(value.getAnnotation(TypeCheckStage.TYPE_KEY)))
+				|| (vartype.isKind(ValueType.Kind.Reference)
+						&& !vartype.getReference().target.equals(value.getAnnotation(TypeCheckStage.TYPE_KEY))))
 			throw new TypeCheckException("Cant assign variable to value of different type", assign);
 		assign.annotate(TypeCheckStage.TYPE_KEY, ValueType.createVoid());
 	}
