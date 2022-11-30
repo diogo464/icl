@@ -1,4 +1,4 @@
-package icl.frontend.print;
+package icl.stages.print;
 
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
@@ -66,7 +66,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptBinOp(AstBinOp node) {
-		var op = PrettyPrinter.binOpKindToString(node.kind);
+		var op = PrettyPrinterStage.binOpKindToString(node.kind);
 		print("(");
 		node.left.accept(this);
 		print(" ", op, " ");
@@ -76,7 +76,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptUnaryOp(AstUnaryOp node) {
-		var op = PrettyPrinter.unaryOpKindToString(node.kind);
+		var op = PrettyPrinterStage.unaryOpKindToString(node.kind);
 		print(op);
 		node.expr.accept(this);
 	}

@@ -1,4 +1,4 @@
-package icl.frontend.jvm;
+package icl.stages.jvm;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +24,7 @@ import icl.ast.AstPrint;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
-import icl.mir.Mir;
-import icl.type.TypeCheckPass;
+import icl.stages.typecheck.TypeCheckStage;
 
 class Visitor implements AstVisitor {
 	private static final int SL_INDEX = 3;
@@ -91,7 +90,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptBinOp(AstBinOp node) {
-		var operand_type = node.left.getAnnotation(TypeCheckPass.TYPE_KEY);
+		var operand_type = node.left.getAnnotation(TypeCheckStage.TYPE_KEY);
 		node.left.accept(this);
 		node.right.accept(this);
 		switch (operand_type.getKind()) {

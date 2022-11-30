@@ -1,8 +1,10 @@
-package icl.mir;
+package icl.stages.typecheck;
 
 import icl.Environment;
+import icl.ValueType;
+import icl.ast.AnnotationKey;
 import icl.ast.AstNode;
-import icl.type.ValueType;
+import icl.pipeline.PipelineStage;
 
 /*-
  *	Type rules
@@ -34,16 +36,19 @@ import icl.type.ValueType;
  *		The type of a Deref unary op is the target type of the reference.
  *
  */
-public class Mir {
-	public static AstNode toMir(AstNode node) {
-		var env = new Environment<ValueType>();
-		return lower(env, node);
-	}
+public class TypeCheckStage implements PipelineStage<AstNode, AstNode> {
+    public static final AnnotationKey<ValueType> TYPE_KEY = new AnnotationKey<>("type");
 
-	static AstNode lower(Environment<ValueType> env, AstNode node) {
-		var visitor = new Visitor(env);
-		node.accept(visitor);
-		return node;
-	}
+    @Override
+    public AstNode process(AstNode input) {
+        var env = new Environment<ValueType>();
+        var output = check(env, input);
+        return output;
+    }
 
+    static AstNode check(Environment<ValueType> env, AstNode node) {
+        var visitor = new Visitor(env);
+        node.accept(visitor);
+        return node;
+    }
 }

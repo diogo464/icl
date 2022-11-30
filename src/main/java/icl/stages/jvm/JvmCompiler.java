@@ -1,4 +1,4 @@
-package icl.frontend.jvm;
+package icl.stages.jvm;
 
 import java.util.List;
 

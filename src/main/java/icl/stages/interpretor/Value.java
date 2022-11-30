@@ -1,12 +1,11 @@
-package icl.frontend.interp;
+package icl.stages.interpretor;
 
 import java.util.List;
 
 import icl.Environment;
+import icl.ValueType;
 import icl.ast.AstFn;
 import icl.ast.AstNode;
-import icl.mir.Mir;
-import icl.type.ValueType;
 
 public abstract class Value {
 	private static class VoidValue extends Value {

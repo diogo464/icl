@@ -1,12 +1,12 @@
-package icl.parser;
+package icl.stages.parser;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import icl.ValueType;
 import icl.ast.*;
-import icl.type.ValueType;
 
 public class Parser {
 	public static final AnnotationKey<Span> SPAN_KEY = new AnnotationKey<>("span");

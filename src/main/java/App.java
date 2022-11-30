@@ -1,20 +1,18 @@
 
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import icl.frontend.interp.Interpretor;
-import icl.frontend.jvm.JvmCompiler;
-import icl.frontend.print.PrettyPrinter;
-import icl.mir.Mir;
-import icl.parser.ParseException;
-import icl.parser.Parser;
+import icl.pipeline.Pipeline;
+import icl.stages.interpretor.InterpretorStage;
+import icl.stages.interpretor.Value;
+import icl.stages.parser.ParserStage;
+import icl.stages.print.PrettyPrinterStage;
+import icl.stages.typecheck.TypeCheckStage;
 
 public class App {
-	public static void main(String[] args) throws ParseException, IOException {
+	public static void main(String[] args) throws IOException {
 		if (args.length == 0) {
 			System.err.println("Usage:");
 			System.err.println("compile <input file>");
@@ -40,44 +38,44 @@ public class App {
 		}
 	}
 
-	private static void commandCompile(String[] args) throws ParseException, IOException {
-		var source_stream = getFileStream(args[0]);
+	private static void commandCompile(String[] args) throws IOException {
+		// var source_stream = getFileStream(args[0]);
+		// var source_str = new String(source_stream.readAllBytes());
+		// var source = source_str.getBytes();
+		// System.out.println("SOURCE\n'" + source_str + "'");
 
-		var source_str = new String(source_stream.readAllBytes());
-		var source = source_str.getBytes();
-		System.out.println("SOURCE\n'" + source_str + "'");
+		// var node = Parser.parse(new ByteArrayInputStream(source));
+		// var compiled_classes = JvmCompiler.compile(Mir.toMir(node));
 
-		var node = Parser.parse(new ByteArrayInputStream(source));
-		var compiled_classes = JvmCompiler.compile(Mir.toMir(node));
-
-		for (var compiled_class : compiled_classes) {
-			var class_name = compiled_class.name;
-			var class_bytes = compiled_class.bytecode;
-			var class_file = new FileOutputStream("calc_target/" + class_name + ".class");
-			class_file.write(class_bytes);
-			class_file.close();
-		}
+		// for (var compiled_class : compiled_classes) {
+		// var class_name = compiled_class.name;
+		// var class_bytes = compiled_class.bytecode;
+		// var class_file = new FileOutputStream("calc_target/" + class_name +
+		// ".class");
+		// class_file.write(class_bytes);
+		// class_file.close();
+		// }
 	}
 
-	private static void commandPrint(String[] args) throws FileNotFoundException, ParseException {
+	private static void commandPrint(String[] args) throws FileNotFoundException {
 		var source_stream = getFileStream(args[0]);
-		var node = Parser.parse(source_stream);
-		var output = PrettyPrinter.printToString(Mir.toMir(node), true);
+		var pipeline = printPipeline();
+		var output = pipeline.process(source_stream);
 		System.out.print(output);
 	}
 
-	private static void commandRun(String[] args) throws FileNotFoundException, ParseException {
+	private static void commandRun(String[] args) throws FileNotFoundException {
 		var source_stream = getFileStream(args[0]);
-		var node = Parser.parse(source_stream);
-		var value = Interpretor.interpret(Mir.toMir(node));
+		var pipeline = interpretorPipeline();
+		var value = pipeline.process(source_stream);
 		System.out.println(value);
 	}
 
-	private static void commandInteractive() throws ParseException {
+	private static void commandInteractive() {
+		var pipeline = interpretorPipeline();
 		while (true) {
-			var node = Parser.parse(System.in);
-			var result = Interpretor.interpret(Mir.toMir(node));
-			System.out.println("Result = " + result);
+			var value = pipeline.process(System.in);
+			System.out.println("Result = " + value);
 		}
 	}
 
@@ -86,5 +84,21 @@ public class App {
 		if (!path.equals("-"))
 			source_stream = new FileInputStream(path);
 		return source_stream;
+	}
+
+	private static Pipeline<InputStream, Value> interpretorPipeline() {
+		return Pipeline
+				.begin(Pipeline.<InputStream>forward())
+				.add(new ParserStage())
+				.add(new TypeCheckStage())
+				.add(new InterpretorStage());
+	}
+
+	private static Pipeline<InputStream, String> printPipeline() {
+		return Pipeline
+				.begin(Pipeline.<InputStream>forward())
+				.add(new ParserStage())
+				.add(new TypeCheckStage())
+				.add(new PrettyPrinterStage());
 	}
 }

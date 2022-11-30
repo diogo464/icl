@@ -3,7 +3,7 @@ package icl.ast;
 import java.util.List;
 import java.util.Optional;
 
-import icl.type.ValueType;
+import icl.ValueType;
 
 public class AstFn extends AstNode {
 	public static class Arg {

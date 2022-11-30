@@ -4,9 +4,9 @@ options {
 }
 
 PARSER_BEGIN(CalcParser)
-package icl.parser;
+package icl.stages.parser;
 import icl.ast.*;
-import icl.type.*;
+import icl.*;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package icl.frontend.jvm;
+package icl.stages.jvm;
 
 class NameGenerator {
 	private int stackframes;

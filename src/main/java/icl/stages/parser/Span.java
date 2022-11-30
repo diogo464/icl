@@ -1,4 +1,4 @@
-package icl.parser;
+package icl.stages.parser;
 
 public class Span {
     public final int startLine;
