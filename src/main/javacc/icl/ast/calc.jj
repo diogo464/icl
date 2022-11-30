@@ -35,11 +35,12 @@ TOKEN :
 	< KW_PRINT	: "print"											> |
 	< KW_PRINTLN: "println"											> |
 	< KW_NEW	: "new"												> |
+	< KW_TYPE	: "type"											> |
 	< TYPE_INT	: "int"												> |
 	< TYPE_BOOL	: "bool"											> |
 	< TYPE_STR	: "str"												> |
 	< TYPE_VOID	: "void"											> |
-	< IDENT		: (["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"])*)	> |
+	< IDENT		: (["a"-"z","A"-"Z","_"](["a"-"z","A"-"Z","0"-"9","_"])*) > |
 	< NUM		: ((["0"-"9"])+)									> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
 	< MULTIAMP	: (["&"])+											> |
@@ -79,23 +80,22 @@ AstNode Start():
 AstNode Stmt():
 { AstNode n; }
 {
-	(n = StmtAssign() | n = StmtDecl() | n = StmtWhile() | n = StmtPrint())
+	(
+		n = StmtAssign() 	|
+		n = StmtDecl() 		|
+		n = StmtWhile() 	|
+		n = StmtPrint()		|
+		n = StmtTypeAlias()
+	)
 	{ return n; }
 }
 
 AstNode Expr():
 { 
 	var n 			= (AstNode) null; 
-	var argument 	= (AstNode) null;
-	var arguments 	= new ArrayList<AstNode>();
-	var endToken 	= (Token) null;
 }
 {
 	(n = ExprBlock() | n = ExprLOr() | n = ExprIf())
-	(<LPAREN>
-		(argument = Expr() {arguments.add(argument);})
-		(<COMMA> argument = Expr() {arguments.add(argument);})*
-	endToken = <RPAREN> {return Parser.astCall(Parser.span(n, endToken), n, arguments); })?
 	{ return n; }
 }
 
@@ -121,7 +121,7 @@ AstNode StmtDecl():
 }
 {
 	(beginToken = <KW_LET>) (mut = <KW_MUT>)? (ident = <IDENT>) (<COL> type = ValueType())? <EQ> (exp = Expr()) (endToken = <SEMICOL>)
-	{ return Parser.astDecl(Parser.span(beginToken, endToken), ident.image, exp, mut != null); }
+	{ return Parser.astDecl(Parser.span(beginToken, endToken), ident.image, exp, mut != null, type); }
 }
 
 AstNode StmtWhile():
@@ -147,6 +147,21 @@ AstNode StmtPrint():
 	(n = <KW_PRINT> | n = <KW_PRINTLN>) (expr = Expr())? (endToken = <SEMICOL>)
 	{ if (expr == null) { expr = Parser.astEmptyNode(Parser.span(endToken)); } }
 	{ return Parser.astPrint(Parser.span(n, endToken), expr); }
+}
+
+AstNode StmtTypeAlias():
+{
+	var beginToken 	= (Token) null;
+	var identToken	= (Token) null;
+	var valueType 	= (ValueType) null;
+}
+{
+	beginToken = <KW_TYPE>
+	identToken = <IDENT>
+	<EQ>
+	valueType = ValueType()
+	<SEMICOL>
+	{ return Parser.astTypeAlias(Parser.span(beginToken, identToken), identToken.image, valueType); }
 }
 
 AstNode ExprIf():
@@ -318,7 +333,7 @@ AstNode ExprUnary():
 			else if ( n.kind == DEREF ) { k.add(AstUnaryOp.Kind.DEREF); }
 			}
 		)* 
-		t = ExprField() 
+		t = ExprCall() 
 	)
 	{
 		if( k == null ) {
@@ -329,6 +344,31 @@ AstNode ExprUnary():
 				tmp = Parser.astUnaryOp(kind, tmp);
 			return tmp;
 		}
+	}
+}
+
+AstNode ExprCall():
+{
+	var func = (AstNode) null;
+	var argument 	= (AstNode) null;
+	var arguments 	= new ArrayList<AstNode>();
+	var endToken 	= (Token) null;
+}
+{
+	func = ExprField()
+	(
+		<LPAREN>
+		(
+			argument = Expr() {arguments.add(argument);}
+			(<COMMA> argument = Expr() {arguments.add(argument);})*
+		)?
+		endToken = <RPAREN>
+	)?
+	{
+		if(endToken != null)
+			return Parser.astCall(Parser.span(func, endToken), func, arguments);
+		else
+			return func;
 	}
 }
 
@@ -432,12 +472,13 @@ ValueType ValueType():
 			(<COMMA> type = ValueType() {arguments.add(type);})*
 		)?
 	<RPAREN> (<ARROW> returntype = ValueType())?
-		{ return ValueType.createFunction(arguments, returntype); } |
+		{ return ValueType.createFunction(arguments, returntype == null ? ValueType.createVoid() : returntype); } |
 	<KW_STRUCT>
 	<LBRACK>
 		(
-			n = <IDENT> <COL> type = ValueType() {fields.add(new Parser.RecordFieldType(n.image, type));}
-			(<COMMA> n = <IDENT> <COL> type = ValueType() {fields.add(new Parser.RecordFieldType(n.image, type));})*
-		)?
-	<RBRACK> { return Parser.createRecordType(fields); }
+			n = <IDENT> <COL> type = ValueType() <SEMICOL>
+			{ fields.add(new Parser.RecordFieldType(n.image, type)); }
+		)*
+	<RBRACK> { return Parser.createRecordType(fields); } |
+	n = <IDENT> { return ValueType.createAlias(n.image); }
 }

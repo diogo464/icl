@@ -11,13 +11,14 @@ import icl.ast.*;
 import icl.stages.parser.exception.ParserException;
 
 public class Parser {
+
+	public static final AnnotationKey<Span> SPAN_KEY = new AnnotationKey<>("span");
+
 	record RecordFieldType(String name, ValueType type) {
 	}
 
 	record RecordField(String name, AstNode value) {
 	}
-
-	public static final AnnotationKey<Span> SPAN_KEY = new AnnotationKey<>("span");
 
 	private Parser() {
 	}
@@ -47,8 +48,8 @@ public class Parser {
 		return node;
 	}
 
-	static AstDecl astDecl(Span span, String name, AstNode value, boolean mutable) {
-		var node = new AstDecl(name, value, mutable);
+	static AstDecl astDecl(Span span, String name, AstNode value, boolean mutable, ValueType type) {
+		var node = new AstDecl(name, value, mutable, Optional.ofNullable(type));
 		node.annotate(SPAN_KEY, span);
 		return node;
 	}
@@ -150,6 +151,12 @@ public class Parser {
 
 	static AstNode astField(Span span, AstNode value, String field) {
 		var node = new AstField(value, field);
+		node.annotate(SPAN_KEY, span);
+		return node;
+	}
+
+	static AstNode astTypeAlias(Span span, String name, ValueType type) {
+		var node = new AstTypeAlias(name, type);
 		node.annotate(SPAN_KEY, span);
 		return node;
 	}

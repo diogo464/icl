@@ -13,7 +13,8 @@ public class ValueType {
 		String,
 		Reference,
 		Function,
-		Record
+		Record,
+		Alias
 	};
 
 	public static class Reference {
@@ -62,9 +63,9 @@ public class ValueType {
 			builder.append(",[");
 			boolean comma = false;
 			for (var arg : this.args) {
-				builder.append(arg);
 				if (comma)
 					builder.append(",");
+				builder.append(arg);
 				comma = true;
 			}
 			builder.append("]]");
@@ -129,12 +130,14 @@ public class ValueType {
 	private final Reference reference;
 	private final Function function;
 	private final Record record;
+	private final String alias;
 
 	private ValueType(Kind kind) {
 		this.kind = kind;
 		this.reference = null;
 		this.function = null;
 		this.record = null;
+		this.alias = null;
 	}
 
 	private ValueType(Reference reference) {
@@ -142,6 +145,7 @@ public class ValueType {
 		this.reference = reference;
 		this.function = null;
 		this.record = null;
+		this.alias = null;
 	}
 
 	private ValueType(Function function) {
@@ -149,6 +153,7 @@ public class ValueType {
 		this.reference = null;
 		this.function = function;
 		this.record = null;
+		this.alias = null;
 	}
 
 	private ValueType(Record record) {
@@ -156,6 +161,15 @@ public class ValueType {
 		this.reference = null;
 		this.function = null;
 		this.record = record;
+		this.alias = null;
+	}
+
+	private ValueType(String custom) {
+		this.kind = Kind.Alias;
+		this.reference = null;
+		this.function = null;
+		this.record = null;
+		this.alias = custom;
 	}
 
 	public Kind getKind() {
@@ -182,6 +196,12 @@ public class ValueType {
 		if (!this.isKind(Kind.Record))
 			throw new IllegalStateException("Called getRecord on ValueType that is not a reference");
 		return this.record;
+	}
+
+	public String getAlias() {
+		if (!this.isKind(Kind.Alias))
+			throw new IllegalStateException("Called getAlias on ValueType that is not an alias");
+		return this.alias;
 	}
 
 	@Override
@@ -219,15 +239,24 @@ public class ValueType {
 	}
 
 	public static ValueType createReference(ValueType target) {
+		assert target != null;
 		return new ValueType(new Reference(target));
 	}
 
 	public static ValueType createFunction(List<ValueType> args, ValueType ret) {
+		assert args != null;
+		assert ret != null;
 		return new ValueType(new Function(args, ret));
 	}
 
 	public static ValueType createRecord(Map<String, ValueType> fields) {
+		assert fields != null;
 		return new ValueType(new Record(fields));
+	}
+
+	public static ValueType createAlias(String name) {
+		assert name != null;
+		return new ValueType(name);
 	}
 
 }

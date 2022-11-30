@@ -34,4 +34,6 @@ public interface AstVisitor {
 	void acceptRecord(AstRecord record);
 
 	void acceptField(AstField field);
+
+	void acceptTypeAlias(AstTypeAlias typeAlias);
 }

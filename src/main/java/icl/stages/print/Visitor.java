@@ -15,6 +15,7 @@ import icl.ast.AstNum;
 import icl.ast.AstPrint;
 import icl.ast.AstRecord;
 import icl.ast.AstScope;
+import icl.ast.AstTypeAlias;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
@@ -209,6 +210,11 @@ class Visitor implements AstVisitor {
 	public void acceptField(AstField field) {
 		field.value.accept(this);
 		print(".", field.field);
+	}
+
+	@Override
+	public void acceptTypeAlias(AstTypeAlias typeAlias) {
+		print("type ", typeAlias.name, " = ", typeAlias.type.toString());
 	}
 
 }

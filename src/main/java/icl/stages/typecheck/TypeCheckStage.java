@@ -1,6 +1,5 @@
 package icl.stages.typecheck;
 
-import icl.Environment;
 import icl.ValueType;
 import icl.ast.AnnotationKey;
 import icl.ast.AstNode;
@@ -38,18 +37,23 @@ import icl.pipeline.PipelineStage;
  *  Field:
  *     The field must exist in the record.
  *     The type of a field is the type of the field in the record.
+ * 
+ * ----------------
+ * 
+ * Defined annotations:
+ *  - TYPE_KEY: The type of the node, all custom types have been resolved to builtin types.
  */
 public class TypeCheckStage implements PipelineStage<AstNode, AstNode> {
     public static final AnnotationKey<ValueType> TYPE_KEY = new AnnotationKey<>("type");
 
     @Override
     public AstNode process(AstNode input) {
-        var env = new Environment<ValueType>();
+        var env = new TypeCheckEnv();
         var output = check(env, input);
         return output;
     }
 
-    static AstNode check(Environment<ValueType> env, AstNode node) {
+    static AstNode check(TypeCheckEnv env, AstNode node) {
         var visitor = new Visitor(env);
         node.accept(visitor);
         return node;

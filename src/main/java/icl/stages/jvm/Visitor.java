@@ -14,6 +14,7 @@ import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
+import icl.ast.AstTypeAlias;
 import icl.ast.AstEmptyNode;
 import icl.ast.AstField;
 import icl.ast.AstFn;
@@ -215,6 +216,12 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptField(AstField field) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void acceptTypeAlias(AstTypeAlias typeAlias) {
 		// TODO Auto-generated method stub
 
 	}
