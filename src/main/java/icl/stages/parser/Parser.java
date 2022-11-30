@@ -2,13 +2,21 @@ package icl.stages.parser;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
 import icl.ValueType;
 import icl.ast.*;
+import icl.stages.parser.exception.ParserException;
 
 public class Parser {
+	record RecordFieldType(String name, ValueType type) {
+	}
+
+	record RecordField(String name, AstNode value) {
+	}
+
 	public static final AnnotationKey<Span> SPAN_KEY = new AnnotationKey<>("span");
 
 	private Parser() {
@@ -128,8 +136,32 @@ public class Parser {
 		return node;
 	}
 
-	static ValueType valueTypeFromTokens(List<Token> tokens) {
-		return ValueType.createVoid();
+	static AstNode astRecord(Span span, List<RecordField> fields) {
+		var map = new HashMap<String, AstNode>();
+		for (var field : fields) {
+			if (map.containsKey(field.name))
+				throw new ParserException("Duplicate field name: " + field.name + " at " + span);
+			map.put(field.name, field.value);
+		}
+		var node = new AstRecord(map);
+		node.annotate(SPAN_KEY, span);
+		return node;
+	}
+
+	static AstNode astField(Span span, AstNode value, String field) {
+		var node = new AstField(value, field);
+		node.annotate(SPAN_KEY, span);
+		return node;
+	}
+
+	static ValueType createRecordType(List<RecordFieldType> fields) {
+		var map = new HashMap<String, ValueType>();
+		for (var field : fields) {
+			if (map.containsKey(field.name))
+				throw new IllegalArgumentException("Duplicate field name: " + field.name);
+			map.put(field.name, field.type);
+		}
+		return ValueType.createRecord(map);
 	}
 
 	static Span span(Token begin, Token end) {

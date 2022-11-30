@@ -35,6 +35,9 @@ import icl.pipeline.PipelineStage;
  * 			Reference:	DEREF
  *		The type of a Deref unary op is the target type of the reference.
  *
+ *  Field:
+ *     The field must exist in the record.
+ *     The type of a field is the type of the field in the record.
  */
 public class TypeCheckStage implements PipelineStage<AstNode, AstNode> {
     public static final AnnotationKey<ValueType> TYPE_KEY = new AnnotationKey<>("type");

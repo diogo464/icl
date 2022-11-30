@@ -6,12 +6,14 @@ import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstField;
 import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNew;
 import icl.ast.AstNum;
 import icl.ast.AstPrint;
+import icl.ast.AstRecord;
 import icl.ast.AstScope;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
@@ -187,6 +189,26 @@ class Visitor implements AstVisitor {
 		if (fn.ret.isPresent())
 			print(" -> ", fn.ret.get().toString());
 		fn.body.accept(this);
+	}
+
+	@Override
+	public void acceptRecord(AstRecord record) {
+		print("{");
+		boolean printComma = false;
+		for (var field : record.fields.entrySet()) {
+			if (printComma)
+				print(",");
+			print(field.getKey(), ": ");
+			field.getValue().accept(this);
+			printComma = true;
+		}
+		print("}");
+	}
+
+	@Override
+	public void acceptField(AstField field) {
+		field.value.accept(this);
+		print(".", field.field);
 	}
 
 }

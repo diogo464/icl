@@ -43,6 +43,7 @@ TOKEN :
 	< NUM		: ((["0"-"9"])+)									> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
 	< MULTIAMP	: (["&"])+											> |
+	< DOT 		: "."												> |
 	< COMMA		: "," 												> |
 	< PLUS		: "+" 												> |
 	< MINUS		: "-" 												> |
@@ -317,7 +318,7 @@ AstNode ExprUnary():
 			else if ( n.kind == DEREF ) { k.add(AstUnaryOp.Kind.DEREF); }
 			}
 		)* 
-		t = ExprLitParenCall() 
+		t = ExprField() 
 	)
 	{
 		if( k == null ) {
@@ -329,6 +330,20 @@ AstNode ExprUnary():
 			return tmp;
 		}
 	}
+}
+
+AstNode ExprField():
+{
+	var value = (AstNode) null;
+	var field = (Token) null;
+}
+{
+	value = ExprLitParenCall()
+	( 
+		<DOT> field = <IDENT>
+		{ value = Parser.astField(Parser.span(value,field), value, field.image); }
+	)*
+	{ return value; }
 }
 
 AstNode ExprLitParenCall():
@@ -347,6 +362,7 @@ AstNode ExprLitParenCall():
 		n = <STRLIT> { return Parser.astStr(Parser.span(n), n.image); } 		|
 		n = <KW_NEW> t = Expr() { return Parser.astNew(Parser.span(n), t); } 	|
 		t = ExprFn() { return t; }												|
+		t = ExprRec() { return t; }												|
 		<LPAREN> t = Expr() <RPAREN> { return t; }
 	)
 }
@@ -370,12 +386,32 @@ AstNode ExprFn():
 	{ return Parser.astFn(Parser.span(beginToken, body), args, type, body); }
 }
 
+AstNode ExprRec():
+{
+	var beginToken 	= (Token) null;
+	var endToken 	= (Token) null;
+	var name 		= (Token) null;
+	var value 		= (AstNode) null;
+	var fields 		= new ArrayList<Parser.RecordField>();
+}
+{
+	beginToken = <KW_STRUCT>
+	<LBRACK>
+		(
+			name = <IDENT> <EQ> value = Expr() <SEMICOL>
+			{ fields.add(new Parser.RecordField(name.image, value)); }
+		)*
+	endToken = <RBRACK>
+	{ return Parser.astRecord(Parser.span(beginToken, endToken), fields); }
+}
+
 ValueType ValueType():
 {
 	var n 			= (Token) null;
 	var type 		= (ValueType) null;
 	var arguments 	= new ArrayList<ValueType>();
 	var returntype 	= (ValueType) null;
+	var fields		= new ArrayList<Parser.RecordFieldType>();
 }
 {
 	<TYPE_INT> { return ValueType.createNumber(); } 	|
@@ -396,5 +432,12 @@ ValueType ValueType():
 			(<COMMA> type = ValueType() {arguments.add(type);})*
 		)?
 	<RPAREN> (<ARROW> returntype = ValueType())?
-		{ return ValueType.createFunction(arguments, returntype); }
+		{ return ValueType.createFunction(arguments, returntype); } |
+	<KW_STRUCT>
+	<LBRACK>
+		(
+			n = <IDENT> <COL> type = ValueType() {fields.add(new Parser.RecordFieldType(n.image, type));}
+			(<COMMA> n = <IDENT> <COL> type = ValueType() {fields.add(new Parser.RecordFieldType(n.image, type));})*
+		)?
+	<RBRACK> { return Parser.createRecordType(fields); }
 }

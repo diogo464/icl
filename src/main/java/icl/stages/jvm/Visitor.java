@@ -15,12 +15,14 @@ import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstField;
 import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNew;
 import icl.ast.AstNum;
 import icl.ast.AstPrint;
+import icl.ast.AstRecord;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
@@ -201,6 +203,18 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptFn(AstFn fn) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void acceptRecord(AstRecord record) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void acceptField(AstField field) {
 		// TODO Auto-generated method stub
 
 	}

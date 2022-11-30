@@ -1,5 +1,7 @@
 package icl.stages.typecheck;
 
+import java.util.HashMap;
+
 import icl.Environment;
 import icl.ValueType;
 import icl.ast.AstAssign;
@@ -8,6 +10,7 @@ import icl.ast.AstBool;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstField;
 import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
@@ -15,6 +18,7 @@ import icl.ast.AstNew;
 import icl.ast.AstNode;
 import icl.ast.AstNum;
 import icl.ast.AstPrint;
+import icl.ast.AstRecord;
 import icl.ast.AstScope;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
@@ -226,6 +230,29 @@ class Visitor implements AstVisitor {
 		var argtypes = fn.arguments.stream().map(a -> a.type).toList();
 		var type = ValueType.createFunction(argtypes, body.getAnnotation(TypeCheckStage.TYPE_KEY));
 		fn.annotate(TypeCheckStage.TYPE_KEY, type);
+	}
+
+	@Override
+	public void acceptRecord(AstRecord record) {
+		var typemap = new HashMap<String, ValueType>();
+		for (var entry : record.fields.entrySet()) {
+			var value = TypeCheckStage.check(this.environment, entry.getValue());
+			typemap.put(entry.getKey(), value.getAnnotation(TypeCheckStage.TYPE_KEY));
+		}
+		var type = ValueType.createRecord(typemap);
+		record.annotate(TypeCheckStage.TYPE_KEY, type);
+	}
+
+	@Override
+	public void acceptField(AstField field) {
+		var record = TypeCheckStage.check(this.environment, field.value);
+		var recordType = record.getAnnotation(TypeCheckStage.TYPE_KEY);
+		if (!recordType.isKind(ValueType.Kind.Record))
+			throw new RuntimeException("Attempt to access field on non-record type");
+		var fieldType = recordType.getRecord().tryGet(field.field);
+		if (fieldType.isEmpty())
+			throw new RuntimeException("Attempt to access non-existent field");
+		field.annotate(TypeCheckStage.TYPE_KEY, fieldType.get());
 	}
 
 }

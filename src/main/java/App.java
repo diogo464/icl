@@ -6,7 +6,7 @@ import java.io.InputStream;
 
 import icl.pipeline.Pipeline;
 import icl.stages.interpretor.InterpretorStage;
-import icl.stages.interpretor.Value;
+import icl.stages.interpretor.value.Value;
 import icl.stages.parser.ParserStage;
 import icl.stages.print.PrettyPrinterStage;
 import icl.stages.typecheck.TypeCheckStage;

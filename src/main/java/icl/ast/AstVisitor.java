@@ -30,4 +30,8 @@ public interface AstVisitor {
 	void acceptNew(AstNew anew);
 
 	void acceptFn(AstFn fn);
+
+	void acceptRecord(AstRecord record);
+
+	void acceptField(AstField field);
 }

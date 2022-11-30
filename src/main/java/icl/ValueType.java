@@ -1,8 +1,9 @@
 package icl;
 
-
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class ValueType {
 	public static enum Kind {
@@ -11,7 +12,8 @@ public class ValueType {
 		Number,
 		String,
 		Reference,
-		Function
+		Function,
+		Record
 	};
 
 	public static class Reference {
@@ -70,26 +72,90 @@ public class ValueType {
 		}
 	};
 
+	public static class Record {
+		private final Map<String, ValueType> fields;
+
+		private Record(Map<String, ValueType> fields) {
+			this.fields = fields;
+		}
+
+		public ValueType get(String name) {
+			var type = this.fields.get(name);
+			if (type == null)
+				throw new RuntimeException("No such field: " + name);
+			return type;
+		}
+
+		public Optional<ValueType> tryGet(String name) {
+			return Optional.ofNullable(this.fields.get(name));
+		}
+
+		public boolean contains(String name) {
+			return this.fields.containsKey(name);
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((fields == null) ? 0 : fields.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Record other = (Record) obj;
+			if (fields == null) {
+				if (other.fields != null)
+					return false;
+			} else if (!fields.equals(other.fields))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "Record [fields=" + fields + "]";
+		}
+	}
+
 	private final Kind kind;
 	private final Reference reference;
 	private final Function function;
+	private final Record record;
 
 	private ValueType(Kind kind) {
 		this.kind = kind;
 		this.reference = null;
 		this.function = null;
+		this.record = null;
 	}
 
 	private ValueType(Reference reference) {
 		this.kind = Kind.Reference;
 		this.reference = reference;
 		this.function = null;
+		this.record = null;
 	}
 
 	private ValueType(Function function) {
 		this.kind = Kind.Function;
 		this.reference = null;
 		this.function = function;
+		this.record = null;
+	}
+
+	private ValueType(Record record) {
+		this.kind = Kind.Record;
+		this.reference = null;
+		this.function = null;
+		this.record = record;
 	}
 
 	public Kind getKind() {
@@ -110,6 +176,12 @@ public class ValueType {
 		if (!this.isKind(Kind.Function))
 			throw new IllegalStateException("Called getFunction on ValueType that is not a reference");
 		return this.function;
+	}
+
+	public Record getRecord() {
+		if (!this.isKind(Kind.Record))
+			throw new IllegalStateException("Called getRecord on ValueType that is not a reference");
+		return this.record;
 	}
 
 	@Override
@@ -154,16 +226,8 @@ public class ValueType {
 		return new ValueType(new Function(args, ret));
 	}
 
-	public static ValueType parse(String string) {
-		if (string.equals("int"))
-			return ValueType.createNumber();
-		else if (string.equals("bool"))
-			return ValueType.createBoolean();
-		else if (string.equals("string"))
-			return ValueType.createString();
-		else if (string.startsWith("&"))
-			return ValueType.createReference(parse(string.substring(1)));
-		else
-			throw new IllegalArgumentException("Invalid type: '" + string + "'");
+	public static ValueType createRecord(Map<String, ValueType> fields) {
+		return new ValueType(new Record(fields));
 	}
+
 }

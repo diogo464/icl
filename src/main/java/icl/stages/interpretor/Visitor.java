@@ -1,5 +1,7 @@
 package icl.stages.interpretor;
 
+import java.util.HashMap;
+
 import icl.Environment;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
@@ -8,15 +10,18 @@ import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
 import icl.ast.AstEmptyNode;
+import icl.ast.AstField;
 import icl.ast.AstFn;
 import icl.ast.AstIf;
 import icl.ast.AstLoop;
 import icl.ast.AstNew;
 import icl.ast.AstNum;
 import icl.ast.AstPrint;
+import icl.ast.AstRecord;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
+import icl.stages.interpretor.value.Value;
 import icl.stages.typecheck.TypeCheckStage;
 
 class Visitor implements AstVisitor {
@@ -44,8 +49,8 @@ class Visitor implements AstVisitor {
 		var operand_type = node.left.getAnnotation(TypeCheckStage.TYPE_KEY);
 		switch (operand_type.getKind()) {
 			case Boolean -> {
-				var left = InterpretorStage.interpret(this.environment, node.left).getBoolean();
-				var right = InterpretorStage.interpret(this.environment, node.right).getBoolean();
+				var left = InterpretorStage.interpret(this.environment, node.left).getBoolean().getValue();
+				var right = InterpretorStage.interpret(this.environment, node.right).getBoolean().getValue();
 				var value = switch (node.kind) {
 					case CMP -> Value.createBoolean(left == right);
 					case LAND -> Value.createBoolean(left && right);
@@ -55,8 +60,8 @@ class Visitor implements AstVisitor {
 				this.value = value;
 			}
 			case Number -> {
-				var left = InterpretorStage.interpret(this.environment, node.left).getNumber();
-				var right = InterpretorStage.interpret(this.environment, node.right).getNumber();
+				var left = InterpretorStage.interpret(this.environment, node.left).getNumber().getValue();
+				var right = InterpretorStage.interpret(this.environment, node.right).getNumber().getValue();
 				var value = switch (node.kind) {
 					case ADD -> Value.createNumber(left + right);
 					case SUB -> Value.createNumber(left - right);
@@ -82,8 +87,8 @@ class Visitor implements AstVisitor {
 			case Number -> {
 				var operand = InterpretorStage.interpret(this.environment, node.expr);
 				var value = switch (node.kind) {
-					case POS -> Value.createNumber(operand.getNumber());
-					case NEG -> Value.createNumber(-operand.getNumber());
+					case POS -> Value.createNumber(operand.getNumber().getValue());
+					case NEG -> Value.createNumber(-operand.getNumber().getValue());
 					default -> throw new IllegalStateException();
 				};
 				this.value = value;
@@ -91,7 +96,7 @@ class Visitor implements AstVisitor {
 			case Boolean -> {
 				var operand = InterpretorStage.interpret(this.environment, node.expr);
 				var value = switch (node.kind) {
-					case LNOT -> Value.createBoolean(!operand.getBoolean());
+					case LNOT -> Value.createBoolean(!operand.getBoolean().getValue());
 					default -> throw new IllegalStateException();
 				};
 				this.value = value;
@@ -99,7 +104,7 @@ class Visitor implements AstVisitor {
 			case Reference -> {
 				var operand = InterpretorStage.interpret(this.environment, node.expr);
 				var value = switch (node.kind) {
-					case DEREF -> operand.getReference();
+					case DEREF -> operand.getReference().getValue();
 					default -> throw new IllegalStateException();
 				};
 				this.value = value;
@@ -140,23 +145,13 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptCall(AstCall call) {
 		var fnvalue = InterpretorStage.interpret(this.environment, call.function).getFunction();
-		var callenv = fnvalue.env.beginScope();
-		System.out.println("Argument count = " + call.arguments.size());
-		for (var i = 0; i < call.arguments.size(); ++i) {
-			var farg = fnvalue.args.get(i);
-			var arg = call.arguments.get(i);
-			var argvalue = InterpretorStage.interpret(this.environment, arg);
-			System.out.println("Call define: " + farg.name);
-			callenv.define(farg.name, argvalue);
-		}
-		var retvalue = InterpretorStage.interpret(callenv, fnvalue.body);
-		this.value = retvalue;
+		this.value = fnvalue.evaluate(call.arguments);
 	}
 
 	@Override
 	public void acceptIf(AstIf astIf) {
 		for (var cond : astIf.conditionals) {
-			var cond_value = InterpretorStage.interpret(this.environment, cond.condition).getBoolean();
+			var cond_value = InterpretorStage.interpret(this.environment, cond.condition).getBoolean().getValue();
 			if (cond_value) {
 				var value = InterpretorStage.interpret(this.environment, cond.expression);
 				this.value = value;
@@ -172,7 +167,7 @@ class Visitor implements AstVisitor {
 	public void acceptLoop(AstLoop loop) {
 		while (true) {
 			var condition = InterpretorStage.interpret(this.environment, loop.condition);
-			if (!condition.getBoolean())
+			if (!condition.getBoolean().getValue())
 				break;
 			InterpretorStage.interpret(this.environment, loop.body);
 		}
@@ -206,6 +201,24 @@ class Visitor implements AstVisitor {
 		var body = fn.body;
 		var fnvalue = Value.createFunction(type, env, fn.arguments, body);
 		this.value = fnvalue;
+	}
+
+	@Override
+	public void acceptRecord(AstRecord record) {
+		var type = record.getAnnotation(TypeCheckStage.TYPE_KEY);
+		var fields = new HashMap<String, Value>();
+		for (var field : record.fields.entrySet()) {
+			var value = InterpretorStage.interpret(this.environment, field.getValue());
+			fields.put(field.getKey(), value);
+		}
+		this.value = Value.createRecord(type, fields);
+	}
+
+	@Override
+	public void acceptField(AstField field) {
+		var record = InterpretorStage.interpret(this.environment, field.value);
+		var value = record.getRecord().getField(field.field);
+		this.value = value;
 	}
 
 }

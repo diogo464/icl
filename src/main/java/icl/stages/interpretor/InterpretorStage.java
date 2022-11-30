@@ -3,6 +3,7 @@ package icl.stages.interpretor;
 import icl.Environment;
 import icl.ast.AstNode;
 import icl.pipeline.PipelineStage;
+import icl.stages.interpretor.value.Value;
 
 public class InterpretorStage implements PipelineStage<AstNode, Value> {
 
@@ -13,7 +14,7 @@ public class InterpretorStage implements PipelineStage<AstNode, Value> {
 		return output;
 	}
 
-	static Value interpret(Environment<Value> env, AstNode node) {
+	public static Value interpret(Environment<Value> env, AstNode node) {
 		var visitor = new Visitor(env);
 		node.accept(visitor);
 		return visitor.value;
