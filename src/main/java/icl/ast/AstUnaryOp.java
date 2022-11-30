@@ -1,6 +1,6 @@
 package icl.ast;
 
-public class AstUnaryOp<T> extends AstNode<T> {
+public class AstUnaryOp extends AstNode {
 	public static enum Kind {
 		POS,
 		NEG,
@@ -9,16 +9,15 @@ public class AstUnaryOp<T> extends AstNode<T> {
 	}
 
 	public final Kind kind;
-	public final AstNode<T> expr;
+	public final AstNode expr;
 
-	public AstUnaryOp(T annotation, Kind kind, AstNode<T> expr) {
-		super(annotation);
+	public AstUnaryOp(Kind kind, AstNode expr) {
 		this.kind = kind;
 		this.expr = expr;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptUnaryOp(this);
 	}
 

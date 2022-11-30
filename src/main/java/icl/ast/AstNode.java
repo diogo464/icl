@@ -1,11 +1,25 @@
 package icl.ast;
 
-public abstract class AstNode<T> {
-	public final T annotation;
+import java.util.Optional;
 
-	public AstNode(T annotation) {
-		this.annotation = annotation;
+public abstract class AstNode {
+	private final Annotations annotations;
+
+	public AstNode() {
+		this.annotations = new Annotations();
 	}
 
-	public abstract void accept(AstVisitor<T> visitor);
+	public <T> void annotate(AnnotationKey<T> key, T value) {
+		annotations.put(key, value);
+	}
+
+	public <T> T getAnnotation(AnnotationKey<T> key) {
+		return annotations.get(key);
+	}
+
+	public <T> Optional<T> tryGetAnnotation(AnnotationKey<T> key) {
+		return annotations.tryGet(key);
+	}
+
+	public abstract void accept(AstVisitor visitor);
 }

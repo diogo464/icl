@@ -1,15 +1,14 @@
 package icl.ast;
 
-public class AstBool<T> extends AstNode<T> {
+public class AstBool extends AstNode {
 	public final boolean value;
 
-	public AstBool(T annotation, boolean value) {
-		super(annotation);
+	public AstBool(boolean value) {
 		this.value = value;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptBool(this);
 	}
 }

@@ -2,18 +2,17 @@ package icl.ast;
 
 import java.util.List;
 
-public class AstScope<T> extends AstNode<T> {
-	public final List<AstNode<T>> stmts;
-	public final AstNode<T> expr;
+public class AstScope extends AstNode {
+	public final List<AstNode> stmts;
+	public final AstNode expr;
 
-	public AstScope(T annotation, List<AstNode<T>> stmts, AstNode<T> expr) {
-		super(annotation);
+	public AstScope(List<AstNode> stmts, AstNode expr) {
 		this.stmts = stmts;
 		this.expr = expr;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptScope(this);
 	}
 

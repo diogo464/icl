@@ -1,15 +1,14 @@
 package icl.ast;
 
-public class AstVar<T> extends AstNode<T> {
+public class AstVar extends AstNode {
 	public final String name;
 
-	public AstVar(T annotation, String name) {
-		super(annotation);
+	public AstVar(String name) {
 		this.name = name;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptVar(this);
 	}
 

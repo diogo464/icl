@@ -2,7 +2,6 @@ package icl.mir;
 
 import icl.Environment;
 import icl.ast.AstNode;
-import icl.hir.Hir;
 import icl.type.ValueType;
 
 /*-
@@ -36,28 +35,15 @@ import icl.type.ValueType;
  *
  */
 public class Mir {
-	public final Hir hir;
-	public final ValueType type;
-
-	Mir(Hir hir, ValueType type) {
-		this.hir = hir;
-		this.type = type;
-	}
-
-	@Override
-	public String toString() {
-		return "Type = " + this.type;
-	}
-
-	public static AstNode<Mir> toMir(AstNode<Hir> node) {
+	public static AstNode toMir(AstNode node) {
 		var env = new Environment<ValueType>();
 		return lower(env, node);
 	}
 
-	static AstNode<Mir> lower(Environment<ValueType> env, AstNode<Hir> node) {
+	static AstNode lower(Environment<ValueType> env, AstNode node) {
 		var visitor = new Visitor(env);
 		node.accept(visitor);
-		return visitor.lowered;
+		return node;
 	}
 
 }

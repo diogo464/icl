@@ -1,15 +1,14 @@
 package icl.ast;
 
-public class AstNum<T> extends AstNode<T> {
+public class AstNum extends AstNode {
 	public final short value;
 
-	public AstNum(T annotation, short value) {
-		super(annotation);
+	public AstNum(short value) {
 		this.value = value;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptNum(this);
 	}
 }

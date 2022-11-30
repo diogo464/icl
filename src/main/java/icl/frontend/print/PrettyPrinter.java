@@ -9,21 +9,21 @@ import icl.ast.AstUnaryOp;
 
 public class PrettyPrinter {
 
-	public static <T> void print(OutputStream stream, AstNode<T> node) throws IOException {
+	public static void print(OutputStream stream, AstNode node) throws IOException {
 		print(stream, node, false);
 	}
 
-	public static <T> void print(OutputStream stream, AstNode<T> node, boolean print_annotations) throws IOException {
+	public static void print(OutputStream stream, AstNode node, boolean print_annotations) throws IOException {
 		var output = printToString(node, print_annotations);
 		stream.write(output.getBytes());
 	}
 
-	public static <T> String printToString(AstNode<T> node) {
+	public static String printToString(AstNode node) {
 		return printToString(node, false);
 	}
 
-	public static <T> String printToString(AstNode<T> node, boolean print_annotations) {
-		var visitor = new Visitor<T>(print_annotations);
+	public static String printToString(AstNode node, boolean print_annotations) {
+		var visitor = new Visitor(print_annotations);
 		node.accept(visitor);
 		var output = visitor.finish();
 		return output;

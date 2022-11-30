@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import icl.type.ValueType;
 
-public class AstFn<T> extends AstNode<T> {
+public class AstFn extends AstNode {
 	public static class Arg {
 		public final String name;
 		public final ValueType type;
@@ -18,17 +18,16 @@ public class AstFn<T> extends AstNode<T> {
 
 	public final List<Arg> arguments;
 	public final Optional<ValueType> ret;
-	public final AstNode<T> body;
+	public final AstNode body;
 
-	public AstFn(T annotation, List<Arg> arguments, Optional<ValueType> ret, AstNode<T> body) {
-		super(annotation);
+	public AstFn(List<Arg> arguments, Optional<ValueType> ret, AstNode body) {
 		this.arguments = arguments;
 		this.ret = ret;
 		this.body = body;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptFn(this);
 	}
 }

@@ -1,12 +1,11 @@
 package icl.ast;
 
-public class AstEmptyNode<T> extends AstNode<T> {
-	public AstEmptyNode(T annotation) {
-		super(annotation);
+public class AstEmptyNode extends AstNode {
+	public AstEmptyNode() {
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptEmptyNode(this);
 	}
 

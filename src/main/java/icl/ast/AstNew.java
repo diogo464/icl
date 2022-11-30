@@ -1,15 +1,14 @@
 package icl.ast;
 
-public class AstNew<T> extends AstNode<T> {
-	public final AstNode<T> value;
+public class AstNew extends AstNode {
+	public final AstNode value;
 
-	public AstNew(T annotation, AstNode<T> value) {
-		super(annotation);
+	public AstNew(AstNode value) {
 		this.value = value;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptNew(this);
 	}
 }

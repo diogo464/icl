@@ -1,33 +1,33 @@
 package icl.ast;
 
-public interface AstVisitor<T> {
-	void acceptNum(AstNum<T> node);
+public interface AstVisitor {
+	void acceptNum(AstNum node);
 
-	void acceptBool(AstBool<T> node);
+	void acceptBool(AstBool node);
 
-	void acceptBinOp(AstBinOp<T> node);
+	void acceptBinOp(AstBinOp node);
 
-	void acceptUnaryOp(AstUnaryOp<T> node);
+	void acceptUnaryOp(AstUnaryOp node);
 
-	void acceptDecl(AstDecl<T> node);
+	void acceptDecl(AstDecl node);
 
-	void acceptScope(AstScope<T> node);
+	void acceptScope(AstScope node);
 
-	void acceptEmptyNode(AstEmptyNode<T> node);
+	void acceptEmptyNode(AstEmptyNode node);
 
-	void acceptVar(AstVar<T> node);
+	void acceptVar(AstVar node);
 
-	void acceptCall(AstCall<T> call);
+	void acceptCall(AstCall call);
 
-	void acceptIf(AstIf<T> astIf);
+	void acceptIf(AstIf astIf);
 
-	void acceptLoop(AstLoop<T> loop);
+	void acceptLoop(AstLoop loop);
 
-	void acceptAssign(AstAssign<T> assign);
+	void acceptAssign(AstAssign assign);
 
-	void acceptPrint(AstPrint<T> print);
+	void acceptPrint(AstPrint print);
 
-	void acceptNew(AstNew<T> anew);
+	void acceptNew(AstNew anew);
 
-	void acceptFn(AstFn<T> fn);
+	void acceptFn(AstFn fn);
 }

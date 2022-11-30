@@ -18,13 +18,13 @@ import icl.ast.AstScope;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
-import icl.hir.Hir;
+import icl.type.TypeCheckPass;
 import icl.type.ValueType;
 import icl.utils.CalcUtils;
 
-class Visitor implements AstVisitor<Hir> {
+class Visitor implements AstVisitor {
 	private final Environment<ValueType> environment;
-	public AstNode<Mir> lowered;
+	public AstNode lowered;
 
 	public Visitor(Environment<ValueType> env) {
 		this.environment = env;
@@ -32,27 +32,26 @@ class Visitor implements AstVisitor<Hir> {
 	}
 
 	@Override
-	public void acceptNum(AstNum<Hir> node) {
-		var annotation = new Mir(node.annotation, ValueType.createNumber());
-		this.lowered = new AstNum<>(annotation, node.value);
+	public void acceptNum(AstNum node) {
+		node.annotate(TypeCheckPass.TYPE_KEY, ValueType.createNumber());
 	}
 
 	@Override
-	public void acceptBool(AstBool<Hir> node) {
-		var annotation = new Mir(node.annotation, ValueType.createBoolean());
-		this.lowered = new AstBool<>(annotation, node.value);
+	public void acceptBool(AstBool node) {
+		node.annotate(TypeCheckPass.TYPE_KEY, ValueType.createBoolean());
 	}
 
 	@Override
-	public void acceptBinOp(AstBinOp<Hir> node) {
+	public void acceptBinOp(AstBinOp node) {
 		var left = Mir.lower(this.environment, node.left);
 		var right = Mir.lower(this.environment, node.right);
-		if (!left.annotation.type.equals(right.annotation.type))
-			throw new RuntimeException("Binary Op operands must have the same type, " + left.annotation.type + " and "
-					+ right.annotation.type);
+		var leftType = left.getAnnotation(TypeCheckPass.TYPE_KEY);
+		var rightType = right.getAnnotation(TypeCheckPass.TYPE_KEY);
 
-		var type = left.annotation.type;
-		switch (type.getKind()) {
+		if (!leftType.equals(rightType))
+			throw new RuntimeException("Binary Op operands must have the same type, " + leftType + " and " + rightType);
+
+		switch (leftType.getKind()) {
 			case Boolean -> {
 				if (!CalcUtils.oneOf(node.kind, AstBinOp.Kind.CMP, AstBinOp.Kind.LAND, AstBinOp.Kind.LOR)) {
 					throw new RuntimeException("Invalid binary operator for boolean");
@@ -66,93 +65,87 @@ class Visitor implements AstVisitor<Hir> {
 				}
 				if (CalcUtils.oneOf(node.kind, AstBinOp.Kind.CMP, AstBinOp.Kind.GT, AstBinOp.Kind.GTE, AstBinOp.Kind.LT,
 						AstBinOp.Kind.LTE)) {
-					type = ValueType.createBoolean();
+					leftType = ValueType.createBoolean();
 				}
 			}
 			default -> throw new RuntimeException("BinaryOp operands must be boolean or number");
 		}
 
-		var annotation = new Mir(node.annotation, type);
-		this.lowered = new AstBinOp<>(annotation, node.kind, left, right);
+		node.annotate(TypeCheckPass.TYPE_KEY, leftType);
 	}
 
 	@Override
-	public void acceptUnaryOp(AstUnaryOp<Hir> node) {
+	public void acceptUnaryOp(AstUnaryOp node) {
 		var expr = Mir.lower(this.environment, node.expr);
 		var kind = node.kind;
-		var type = expr.annotation.type;
+		var type = expr.getAnnotation(TypeCheckPass.TYPE_KEY);
 		switch (type.getKind()) {
 			case Boolean -> {
 				if (!CalcUtils.oneOf(kind, AstUnaryOp.Kind.LNOT))
 					throw new RuntimeException("Boolean UnaryOp operator must be one of LNOT");
-				var annotation = new Mir(node.annotation, type);
-				this.lowered = new AstUnaryOp<>(annotation, kind, expr);
+				node.annotate(TypeCheckPass.TYPE_KEY, type);
 			}
 			case Number -> {
 				if (!CalcUtils.oneOf(kind, AstUnaryOp.Kind.POS, AstUnaryOp.Kind.NEG))
 					throw new RuntimeException("Number UnaryOp operator must be one of POS, NEG");
-				var annotation = new Mir(node.annotation, type);
-				this.lowered = new AstUnaryOp<>(annotation, kind, expr);
+				node.annotate(TypeCheckPass.TYPE_KEY, type);
 			}
 			case Reference -> {
 				if (!CalcUtils.oneOf(kind, AstUnaryOp.Kind.DEREF))
 					throw new RuntimeException("Reference UnaryOp operator must be one of DEREF");
-				var annotation = new Mir(node.annotation, type.getReference().target);
-				this.lowered = new AstUnaryOp<>(annotation, kind, expr);
+				var derefType = type.getReference().target;
+				node.annotate(TypeCheckPass.TYPE_KEY, derefType);
 			}
 			default -> throw new RuntimeException("UnaryOp operand type must be Number, Boolean or Reference");
 		}
 	}
 
 	@Override
-	public void acceptDecl(AstDecl<Hir> node) {
+	public void acceptDecl(AstDecl node) {
 		var value = Mir.lower(this.environment, node.value);
-		var annotation = new Mir(node.annotation, ValueType.createVoid());
-		this.environment.define(node.name, value.annotation.type);
-		this.lowered = new AstDecl<>(annotation, node.name, value, node.mutable);
-		System.out.println("Defining '" + node.name + "'");
-		System.out.println(this.environment);
+		this.environment.define(node.name, value.getAnnotation(TypeCheckPass.TYPE_KEY));
+		node.annotate(TypeCheckPass.TYPE_KEY, ValueType.createVoid());
 	}
 
 	@Override
-	public void acceptScope(AstScope<Hir> node) {
+	public void acceptScope(AstScope node) {
 		var env = this.environment.beginScope();
-		var stmts = node.stmts.stream().map(n -> Mir.lower(env, n)).toList();
+		for (var stmt : node.stmts)
+			Mir.lower(env, stmt);
 		var expr = Mir.lower(env, node.expr);
-		var annotation = new Mir(node.annotation, expr.annotation.type);
-		this.lowered = new AstScope<>(annotation, stmts, expr);
+		node.annotate(TypeCheckPass.TYPE_KEY, expr.getAnnotation(TypeCheckPass.TYPE_KEY));
 	}
 
 	@Override
-	public void acceptEmptyNode(AstEmptyNode<Hir> node) {
-		var annotation = new Mir(node.annotation, ValueType.createVoid());
-		this.lowered = new AstEmptyNode<>(annotation);
+	public void acceptEmptyNode(AstEmptyNode node) {
+		node.annotate(TypeCheckPass.TYPE_KEY, ValueType.createVoid());
 	}
 
 	@Override
-	public void acceptVar(AstVar<Hir> node) {
+	public void acceptVar(AstVar node) {
 		var type = this.environment.lookup(node.name);
 		if (type == null)
 			throw new RuntimeException(
 					"Failed to lookup name to obtain type information: '" + node.name + "'\n" + this.environment);
-		var annotation = new Mir(node.annotation, type);
-		this.lowered = new AstVar<>(annotation, node.name);
+		node.annotate(TypeCheckPass.TYPE_KEY, type);
 	}
 
 	@Override
-	public void acceptCall(AstCall<Hir> call) {
+	public void acceptCall(AstCall call) {
 		var function = Mir.lower(this.environment, call.function);
+		var functionType = function.getAnnotation(TypeCheckPass.TYPE_KEY);
+
 		var arguments = call.arguments.stream().map(n -> Mir.lower(this.environment, n)).toList();
-		if (!function.annotation.type.isKind(ValueType.Kind.Function))
+		if (!functionType.isKind(ValueType.Kind.Function))
 			throw new RuntimeException("Attempt to call non-function");
 
-		var ftype = function.annotation.type.getFunction();
+		var ftype = functionType.getFunction();
 		if (arguments.size() != ftype.args.size())
 			throw new RuntimeException("Function call argument count missmatch");
 
 		for (var i = 0; i < ftype.args.size(); ++i) {
 			var farg = ftype.args.get(i);
-			var arg = arguments.get(i).annotation.type;
+			var arg = arguments.get(i).getAnnotation(TypeCheckPass.TYPE_KEY);
 			if (farg.equals(arg))
 				continue;
 
@@ -161,85 +154,79 @@ class Visitor implements AstVisitor<Hir> {
 		}
 
 		assert ftype.ret != null;
-		var annotation = new Mir(call.annotation, ftype.ret);
-		this.lowered = new AstCall<>(annotation, function, arguments);
+		call.annotate(TypeCheckPass.TYPE_KEY, ftype.ret);
 	}
 
 	@Override
-	public void acceptIf(AstIf<Hir> astIf) {
+	public void acceptIf(AstIf astIf) {
 		var conditionals = astIf.conditionals.stream().map(c -> {
 			var condition = Mir.lower(this.environment, c.condition);
 			var expression = Mir.lower(this.environment, c.expression);
-			return new AstIf.Conditional<>(condition, expression);
+			return new AstIf.Conditional(condition, expression);
 		}).toList();
 		var fallthrough = Mir.lower(this.environment, astIf.fallthrough);
 
 		for (var cond : conditionals)
-			if (!cond.condition.annotation.type.isKind(ValueType.Kind.Boolean))
+			if (!cond.condition.getAnnotation(TypeCheckPass.TYPE_KEY).isKind(ValueType.Kind.Boolean))
 				throw new RuntimeException("If condition must be boolean");
 
 		for (var cond : conditionals)
-			if (!cond.expression.annotation.type.equals(fallthrough.annotation.type))
+			if (!cond.expression.getAnnotation(TypeCheckPass.TYPE_KEY)
+					.equals(fallthrough.getAnnotation(TypeCheckPass.TYPE_KEY)))
 				throw new RuntimeException("All if branches must evaluate to the same type");
 
-		var annotation = new Mir(astIf.annotation, fallthrough.annotation.type);
-		this.lowered = new AstIf<>(annotation, conditionals, fallthrough);
+		astIf.annotate(TypeCheckPass.TYPE_KEY, fallthrough.getAnnotation(TypeCheckPass.TYPE_KEY));
 	}
 
 	@Override
-	public void acceptLoop(AstLoop<Hir> loop) {
+	public void acceptLoop(AstLoop loop) {
 		var condition = Mir.lower(this.environment, loop.condition);
-		var body = Mir.lower(this.environment, loop.body);
+		Mir.lower(this.environment, loop.body);
 
-		if (!condition.annotation.type.isKind(ValueType.Kind.Boolean))
+		if (!condition.getAnnotation(TypeCheckPass.TYPE_KEY).isKind(ValueType.Kind.Boolean))
 			throw new RuntimeException("Loop conditional must be boolean");
 
-		var annotation = new Mir(loop.annotation, ValueType.createVoid());
-		this.lowered = new AstLoop<>(annotation, condition, body);
+		loop.annotate(TypeCheckPass.TYPE_KEY, ValueType.createVoid());
 	}
 
 	@Override
-	public void acceptAssign(AstAssign<Hir> assign) {
+	public void acceptAssign(AstAssign assign) {
 		var vartype = this.environment.lookup(assign.name);
 		if (vartype == null)
 			throw new RuntimeException("Failed to lookup variable: '" + assign.name + "'");
 		var value = Mir.lower(this.environment, assign.value);
-		if (!vartype.equals(value.annotation.type))
+		if (!vartype.equals(value.getAnnotation(TypeCheckPass.TYPE_KEY)))
 			throw new RuntimeException("Cant assign variable to value of different type");
-		var annotation = new Mir(assign.annotation, ValueType.createVoid());
-		this.lowered = new AstAssign<>(annotation, assign.name, value);
+		assign.annotate(TypeCheckPass.TYPE_KEY, ValueType.createVoid());
 	}
 
 	@Override
-	public void acceptPrint(AstPrint<Hir> print) {
+	public void acceptPrint(AstPrint print) {
 		System.out.println("acceptPrint Environment");
 		System.out.println(this.environment);
-		var expr = Mir.lower(this.environment, print.expr);
-		var annotation = new Mir(print.annotation, ValueType.createVoid());
-		this.lowered = new AstPrint<>(annotation, expr);
+		Mir.lower(this.environment, print.expr);
+		print.annotate(TypeCheckPass.TYPE_KEY, ValueType.createVoid());
 	}
 
 	@Override
-	public void acceptNew(AstNew<Hir> anew) {
+	public void acceptNew(AstNew anew) {
 		var value = Mir.lower(this.environment, anew.value);
-		var reftype = ValueType.createReference(value.annotation.type);
-		var annotation = new Mir(anew.annotation, reftype);
-		this.lowered = new AstNew<>(annotation, value);
+		var reftype = ValueType.createReference(value.getAnnotation(TypeCheckPass.TYPE_KEY));
+		anew.annotate(TypeCheckPass.TYPE_KEY, reftype);
 	}
 
 	@Override
-	public void acceptFn(AstFn<Hir> fn) {
+	public void acceptFn(AstFn fn) {
 		var bodyenv = this.environment.beginScope();
 		for (var arg : fn.arguments)
 			bodyenv.define(arg.name, arg.type);
 		var body = Mir.lower(bodyenv, fn.body);
 		if (fn.ret.isPresent())
-			if (!fn.ret.get().equals(body.annotation.type))
+			if (!fn.ret.get().equals(body.getAnnotation(TypeCheckPass.TYPE_KEY)))
 				throw new RuntimeException("Function return type does not match body type");
 		var argtypes = fn.arguments.stream().map(a -> a.type).toList();
-		var type = ValueType.createFunction(argtypes, body.annotation.type);
-		var annotation = new Mir(fn.annotation, type);
-		this.lowered = new AstFn<>(annotation, fn.arguments, fn.ret, body);
+		var type = ValueType.createFunction(argtypes, body.getAnnotation(TypeCheckPass.TYPE_KEY));
+		fn.annotate(TypeCheckPass.TYPE_KEY, type);
 	}
 
 }

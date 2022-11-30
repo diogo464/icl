@@ -3,7 +3,6 @@ package icl.frontend.jvm;
 import java.util.List;
 
 import icl.ast.AstNode;
-import icl.mir.Mir;
 
 public class JvmCompiler {
 	public static class CompiledClass {
@@ -16,7 +15,7 @@ public class JvmCompiler {
 		}
 	}
 
-	public static List<CompiledClass> compile(AstNode<Mir> node) {
+	public static List<CompiledClass> compile(AstNode node) {
 
 		return null;
 	}

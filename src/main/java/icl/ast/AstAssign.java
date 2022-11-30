@@ -1,17 +1,16 @@
 package icl.ast;
 
-public class AstAssign<T> extends AstNode<T> {
+public class AstAssign extends AstNode {
 	public final String name;
-	public final AstNode<T> value;
+	public final AstNode value;
 
-	public AstAssign(T annotation, String name, AstNode<T> value) {
-		super(annotation);
+	public AstAssign(String name, AstNode value) {
 		this.name = name;
 		this.value = value;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptAssign(this);
 	}
 }

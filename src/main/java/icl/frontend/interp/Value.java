@@ -86,9 +86,9 @@ public abstract class Value {
 	public static class FnValue extends Value {
 		public final Environment<Value> env;
 		public final List<AstFn.Arg> args;
-		public final AstNode<Mir> body;
+		public final AstNode body;
 
-		public FnValue(ValueType type, Environment<Value> environment, List<AstFn.Arg> args, AstNode<Mir> body) {
+		public FnValue(ValueType type, Environment<Value> environment, List<AstFn.Arg> args, AstNode body) {
 			super(type);
 			this.env = environment;
 			this.args = args;
@@ -187,7 +187,7 @@ public abstract class Value {
 			ValueType type,
 			Environment<Value> env,
 			List<AstFn.Arg> args,
-			AstNode<Mir> body) {
+			AstNode body) {
 		return new FnValue(type, env, args, body);
 	}
 }

@@ -2,18 +2,17 @@ package icl.ast;
 
 import java.util.List;
 
-public class AstCall<T> extends AstNode<T> {
-	public final AstNode<T> function;
-	public final List<AstNode<T>> arguments;
+public class AstCall extends AstNode {
+	public final AstNode function;
+	public final List<AstNode> arguments;
 
-	public AstCall(T annotation, AstNode<T> function, List<AstNode<T>> arguments) {
-		super(annotation);
+	public AstCall(AstNode function, List<AstNode> arguments) {
 		this.function = function;
 		this.arguments = arguments;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptCall(this);
 	}
 

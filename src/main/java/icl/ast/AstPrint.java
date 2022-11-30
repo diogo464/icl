@@ -1,15 +1,14 @@
 package icl.ast;
 
-public class AstPrint<T> extends AstNode<T> {
-	public final AstNode<T> expr;
+public class AstPrint extends AstNode {
+	public final AstNode expr;
 
-	public AstPrint(T annotation, AstNode<T> expr) {
-		super(annotation);
+	public AstPrint(AstNode expr) {
 		this.expr = expr;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		visitor.acceptPrint(this);
 	}
 }

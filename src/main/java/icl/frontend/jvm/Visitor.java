@@ -25,8 +25,9 @@ import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
 import icl.mir.Mir;
+import icl.type.TypeCheckPass;
 
-class Visitor implements AstVisitor<Mir> {
+class Visitor implements AstVisitor {
 	private static final int SL_INDEX = 3;
 
 	private final JvmEnvironment environment;
@@ -76,21 +77,21 @@ class Visitor implements AstVisitor<Mir> {
 	}
 
 	@Override
-	public void acceptNum(AstNum<Mir> node) {
+	public void acceptNum(AstNum node) {
 		var value = node.value;
 		this.visitor.visitIntInsn(Opcodes.SIPUSH, value);
 	}
 
 	@Override
-	public void acceptBool(AstBool<Mir> node) {
+	public void acceptBool(AstBool node) {
 		var value = node.value;
 		var ivalue = value ? 1 : 0;
 		this.visitor.visitIntInsn(Opcodes.SIPUSH, ivalue);
 	}
 
 	@Override
-	public void acceptBinOp(AstBinOp<Mir> node) {
-		var operand_type = node.left.annotation.type;
+	public void acceptBinOp(AstBinOp node) {
+		var operand_type = node.left.getAnnotation(TypeCheckPass.TYPE_KEY);
 		node.left.accept(this);
 		node.right.accept(this);
 		switch (operand_type.getKind()) {
@@ -134,73 +135,73 @@ class Visitor implements AstVisitor<Mir> {
 	}
 
 	@Override
-	public void acceptUnaryOp(AstUnaryOp<Mir> node) {
+	public void acceptUnaryOp(AstUnaryOp node) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptDecl(AstDecl<Mir> node) {
+	public void acceptDecl(AstDecl node) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptScope(AstScope<Mir> node) {
+	public void acceptScope(AstScope node) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptEmptyNode(AstEmptyNode<Mir> node) {
+	public void acceptEmptyNode(AstEmptyNode node) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptVar(AstVar<Mir> node) {
+	public void acceptVar(AstVar node) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptCall(AstCall<Mir> call) {
+	public void acceptCall(AstCall call) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptIf(AstIf<Mir> astIf) {
+	public void acceptIf(AstIf astIf) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptLoop(AstLoop<Mir> loop) {
+	public void acceptLoop(AstLoop loop) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptAssign(AstAssign<Mir> assign) {
+	public void acceptAssign(AstAssign assign) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptPrint(AstPrint<Mir> print) {
+	public void acceptPrint(AstPrint print) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptNew(AstNew<Mir> anew) {
+	public void acceptNew(AstNew anew) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void acceptFn(AstFn<Mir> fn) {
+	public void acceptFn(AstFn fn) {
 		// TODO Auto-generated method stub
 
 	}

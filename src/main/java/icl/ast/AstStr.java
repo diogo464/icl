@@ -1,15 +1,14 @@
 package icl.ast;
 
-public class AstStr<T> extends AstNode<T> {
+public class AstStr extends AstNode {
 	public final String value;
 
-	public AstStr(T annotation, String value) {
-		super(annotation);
+	public AstStr(String value) {
 		this.value = value;
 	}
 
 	@Override
-	public void accept(AstVisitor<T> visitor) {
+	public void accept(AstVisitor visitor) {
 		throw new RuntimeException("Trying to visit a string literal");
 	}
 

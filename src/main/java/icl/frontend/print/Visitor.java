@@ -17,7 +17,7 @@ import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
 
-class Visitor<T> implements AstVisitor<T> {
+class Visitor implements AstVisitor {
 	private final boolean print_annotations;
 	private final StringBuilder builder;
 	private int indent;
@@ -44,33 +44,30 @@ class Visitor<T> implements AstVisitor<T> {
 			this.builder.append("\t");
 	}
 
-	private void printAnnotation(T annotation) {
+	private <T> void printAnnotation(T annotation) {
 		if (!this.print_annotations)
 			return;
 		this.print("[", annotation.toString(), "]");
 	}
 
 	@Override
-	public void acceptNum(AstNum<T> node) {
+	public void acceptNum(AstNum node) {
 		print("(");
-		printAnnotation(node.annotation);
 		print(String.valueOf(node.value));
 		print(")");
 	}
 
 	@Override
-	public void acceptBool(AstBool<T> node) {
+	public void acceptBool(AstBool node) {
 		print("(");
-		printAnnotation(node.annotation);
 		print(String.valueOf(node.value));
 		print(")");
 	}
 
 	@Override
-	public void acceptBinOp(AstBinOp<T> node) {
+	public void acceptBinOp(AstBinOp node) {
 		var op = PrettyPrinter.binOpKindToString(node.kind);
 		print("(");
-		printAnnotation(node.annotation);
 		node.left.accept(this);
 		print(" ", op, " ");
 		node.right.accept(this);
@@ -78,16 +75,14 @@ class Visitor<T> implements AstVisitor<T> {
 	}
 
 	@Override
-	public void acceptUnaryOp(AstUnaryOp<T> node) {
+	public void acceptUnaryOp(AstUnaryOp node) {
 		var op = PrettyPrinter.unaryOpKindToString(node.kind);
-		printAnnotation(node.annotation);
 		print(op);
 		node.expr.accept(this);
 	}
 
 	@Override
-	public void acceptDecl(AstDecl<T> node) {
-		printAnnotation(node.annotation);
+	public void acceptDecl(AstDecl node) {
 		print("let ");
 		if (node.mutable)
 			print("mut ");
@@ -97,9 +92,8 @@ class Visitor<T> implements AstVisitor<T> {
 	}
 
 	@Override
-	public void acceptScope(AstScope<T> node) {
+	public void acceptScope(AstScope node) {
 		this.indent += 1;
-		printAnnotation(node.annotation);
 		println("{");
 		var printLine = false;
 		for (var stmt : node.stmts) {
@@ -114,18 +108,17 @@ class Visitor<T> implements AstVisitor<T> {
 	}
 
 	@Override
-	public void acceptEmptyNode(AstEmptyNode<T> node) {
+	public void acceptEmptyNode(AstEmptyNode node) {
 	}
 
 	@Override
-	public void acceptVar(AstVar<T> node) {
+	public void acceptVar(AstVar node) {
 		print("(");
-		printAnnotation(node.annotation);
 		print(node.name, ")");
 	}
 
 	@Override
-	public void acceptCall(AstCall<T> call) {
+	public void acceptCall(AstCall call) {
 		call.function.accept(this);
 		print("(");
 		boolean printComma = false;
@@ -139,8 +132,7 @@ class Visitor<T> implements AstVisitor<T> {
 	}
 
 	@Override
-	public void acceptIf(AstIf<T> astIf) {
-		printAnnotation(astIf.annotation);
+	public void acceptIf(AstIf astIf) {
 		boolean isFirst = true;
 		for (var cond : astIf.conditionals) {
 			if (!isFirst)
@@ -158,8 +150,7 @@ class Visitor<T> implements AstVisitor<T> {
 	}
 
 	@Override
-	public void acceptLoop(AstLoop<T> loop) {
-		printAnnotation(loop.annotation);
+	public void acceptLoop(AstLoop loop) {
 		print("while ");
 		loop.condition.accept(this);
 		println(" {");
@@ -170,26 +161,25 @@ class Visitor<T> implements AstVisitor<T> {
 	}
 
 	@Override
-	public void acceptAssign(AstAssign<T> assign) {
-		printAnnotation(assign.annotation);
+	public void acceptAssign(AstAssign assign) {
 		print(assign.name, " := ");
 		assign.value.accept(this);
 	}
 
 	@Override
-	public void acceptPrint(AstPrint<T> print) {
+	public void acceptPrint(AstPrint print) {
 		print("print ");
 		print.expr.accept(this);
 	}
 
 	@Override
-	public void acceptNew(AstNew<T> anew) {
+	public void acceptNew(AstNew anew) {
 		print("new ");
 		anew.value.accept(this);
 	}
 
 	@Override
-	public void acceptFn(AstFn<T> fn) {
+	public void acceptFn(AstFn fn) {
 		print("fn(");
 		for (var arg : fn.arguments)
 			print(arg.name, ": ", arg.type.toString());
