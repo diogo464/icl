@@ -1,0 +1,7 @@
+{
+    println (1 + 2);
+    println (1 + 2 + 3);
+    println (2 * 5 + 3);
+    println (10 / 2 * 10);
+    println (10 / 2 - 5 + 1);
+};;

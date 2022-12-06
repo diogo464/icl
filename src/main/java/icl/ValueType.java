@@ -1,5 +1,6 @@
 package icl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,7 +45,7 @@ public class ValueType {
 
 		private Function(List<ValueType> args, ValueType ret) {
 			this.ret = ret;
-			this.args = args;
+			this.args = Collections.unmodifiableList(List.copyOf(args));
 		}
 
 		@Override
@@ -77,7 +78,7 @@ public class ValueType {
 		private final Map<String, ValueType> fields;
 
 		private Record(Map<String, ValueType> fields) {
-			this.fields = fields;
+			this.fields = Collections.unmodifiableMap(Map.copyOf(fields));
 		}
 
 		public ValueType get(String name) {

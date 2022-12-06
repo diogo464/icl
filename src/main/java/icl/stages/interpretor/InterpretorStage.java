@@ -17,7 +17,7 @@ public class InterpretorStage implements PipelineStage<AstNode, Value> {
 	public static Value interpret(Environment<Value> env, AstNode node) {
 		var visitor = new Visitor(env);
 		node.accept(visitor);
-		assert visitor.value != null;
+		assert visitor.value != null : "Evaluation of node " + node + " did not produce a value";
 		return visitor.value;
 	}
 

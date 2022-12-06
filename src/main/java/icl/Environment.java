@@ -53,7 +53,7 @@ public class Environment<T> {
 			builder.append(entry.getValue().toString());
 			builder.append("\n");
 		}
-		builder.append("-----------------");
+		builder.append("-----------------\n");
 		if (this.parent != null)
 			builder.append(this.parent.toString());
 		return builder.toString();

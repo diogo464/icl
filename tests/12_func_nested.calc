@@ -1,0 +1,8 @@
+{
+    let add_one = fn(x:int) { x + 1 };
+    let add_two = fn(x:int) { x + 2 };
+    let join = fn(x: fn(int)->int, y: fn(int)->int) { fn(z: int) {x(y(z))} };
+    let add_three = fn(x:int) { join(add_one, add_two)(x) };
+
+    println add_three(1);
+};;

@@ -33,6 +33,9 @@ import icl.stages.typecheck.TypeCheckStage;
 class Visitor implements AstVisitor {
 	private static final int SL_INDEX = 3;
 
+	private static final int INT_TRUE = 1;
+	private static final int INT_FALSE = 0;
+
 	private final JvmEnvironment environment;
 
 	// Code generation
@@ -52,24 +55,16 @@ class Visitor implements AstVisitor {
 				null);
 		this.visitor.visitCode();
 		this.visitor.visitMaxs(256, 256);
-		this.visitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out",
-				"Ljava/io/PrintStream;");
 	}
 
-	public List<JvmCompiler.CompiledClass> finish() {
-		var compiled_classes = new ArrayList<JvmCompiler.CompiledClass>();
-		this.visitor.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
-				"valueOf", "(I)Ljava/lang/String;",
-				false);
-		this.visitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream",
-				"println",
-				"(Ljava/lang/String;)V", false);
+	public List<CompiledClass> finish() {
+		var compiled_classes = new ArrayList<CompiledClass>();
 		this.visitor.visitInsn(Opcodes.RETURN);
 		this.visitor.visitEnd();
 		this.main_class.visitEnd();
 
 		var main_class_bytecode = this.main_class.toByteArray();
-		var main_class_compiled = new JvmCompiler.CompiledClass("Main",
+		var main_class_compiled = new CompiledClass("Main",
 				main_class_bytecode);
 		compiled_classes.add(main_class_compiled);
 
@@ -118,16 +113,22 @@ class Visitor implements AstVisitor {
 			case Number -> {
 				switch (node.kind) {
 					case ADD -> {
+						this.visitor.visitInsn(Opcodes.IADD);
 					}
 					case SUB -> {
+						this.visitor.visitInsn(Opcodes.ISUB);
 					}
 					case MUL -> {
+						this.visitor.visitInsn(Opcodes.IMUL);
 					}
 					case DIV -> {
+						this.visitor.visitInsn(Opcodes.IDIV);
 					}
 					case CMP -> {
+						this.visitor.visitInsn(Opcodes.ISUB);
 					}
 					case GT -> {
+
 					}
 					case GTE -> {
 					}
@@ -144,26 +145,46 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptUnaryOp(AstUnaryOp node) {
-		// TODO Auto-generated method stub
-
+		node.expr.accept(this);
+		var operand_type = node.expr.getAnnotation(TypeCheckStage.TYPE_KEY);
+		switch (operand_type.getKind()) {
+			case Boolean -> {
+				switch (node.kind) {
+					case LNOT -> {
+						this.visitor.visitInsn(Opcodes.ICONST_1);
+						this.visitor.visitInsn(Opcodes.IXOR);
+					}
+					default -> throw new IllegalStateException();
+				}
+			}
+			case Number -> {
+				switch (node.kind) {
+					case NEG -> {
+						this.visitor.visitInsn(Opcodes.INEG);
+					}
+					case POS -> {
+					}
+					default -> throw new IllegalStateException();
+				}
+			}
+			case Reference -> {
+				// TODO: Load the reference field
+			}
+			default -> throw new IllegalStateException();
+		}
 	}
 
 	@Override
 	public void acceptDecl(AstDecl node) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void acceptScope(AstScope node) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
 	public void acceptEmptyNode(AstEmptyNode node) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -180,14 +201,41 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptIf(AstIf astIf) {
-		// TODO Auto-generated method stub
+		// Reserve space for fallthrough label and end label
+		var labels = new Label[astIf.conditionals.size() + 2];
+		var fallthrough_label_idx = labels.length - 2;
+		var end_label_idx = labels.length - 1;
 
+		for (var i = 0; i < astIf.conditionals.size(); ++i)
+			labels[i] = new Label();
+		labels[fallthrough_label_idx] = new Label();
+		labels[end_label_idx] = new Label();
+
+		for (var i = 0; i < astIf.conditionals.size(); ++i) {
+			var conditional = astIf.conditionals.get(i);
+			conditional.condition.accept(this);
+			this.visitor.visitInsn(Opcodes.ICONST_1);
+			this.visitor.visitJumpInsn(Opcodes.IF_ICMPNE, labels[i + 1]);
+			conditional.expression.accept(this);
+			this.visitor.visitJumpInsn(Opcodes.GOTO, labels[end_label_idx]);
+		}
+
+		this.visitor.visitLabel(labels[fallthrough_label_idx]);
+		astIf.fallthrough.accept(this);
+		this.visitor.visitLabel(labels[end_label_idx]);
 	}
 
 	@Override
 	public void acceptLoop(AstLoop loop) {
-		// TODO Auto-generated method stub
-
+		var cond_label = new Label();
+		var end_label = new Label();
+		this.visitor.visitLabel(cond_label);
+		loop.condition.accept(this);
+		this.visitor.visitInsn(Opcodes.ICONST_1);
+		this.visitor.visitJumpInsn(Opcodes.IF_ICMPNE, end_label);
+		loop.body.accept(this);
+		this.visitor.visitJumpInsn(Opcodes.GOTO, cond_label);
+		this.visitor.visitLabel(end_label);
 	}
 
 	@Override
@@ -198,8 +246,16 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptPrint(AstPrint print) {
-		// TODO Auto-generated method stub
-
+		this.visitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out",
+				"Ljava/io/PrintStream;");
+		print.expr.accept(this);
+		// TODO: Descriptor of valueOf is wrong, only works for int
+		this.visitor.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
+				"valueOf", "(I)Ljava/lang/String;",
+				false);
+		var method_name = print.newline ? "println" : "print";
+		this.visitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream",
+				method_name, "(Ljava/lang/String;)V", false);
 	}
 
 	@Override

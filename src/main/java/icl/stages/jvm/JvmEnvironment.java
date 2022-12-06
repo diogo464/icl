@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import icl.Environment;
+import icl.ValueType;
 
 class JvmEnvironment {
 	public static class Variable {
@@ -12,9 +13,9 @@ class JvmEnvironment {
 		// Name of the field in the stack frame
 		public final String name;
 		// The stackframe this variable belongs to
-		public final StackFrame stackframe;
+		public final StackFrameOld stackframe;
 
-		Variable(int depth, String name, StackFrame stackframe) {
+		Variable(int depth, String name, StackFrameOld stackframe) {
 			this.depth = depth;
 			this.name = name;
 			this.stackframe = stackframe;
@@ -22,9 +23,9 @@ class JvmEnvironment {
 	}
 
 	private final NameGenerator name_generator;
-	private final List<StackFrame> stackframes;
+	private final List<StackFrameOld> stackframes;
 	private Environment<Variable> environment;
-	private StackFrame current_frame;
+	private StackFrameOld current_frame;
 	private int current_depth;
 
 	public JvmEnvironment(NameGenerator name_generator) {
@@ -39,22 +40,22 @@ class JvmEnvironment {
 		return this.current_depth;
 	}
 
-	public StackFrame getCurrentStackFrame() {
+	public StackFrameOld getCurrentStackFrame() {
 		return this.current_frame;
 	}
 
 	public void beginScope() {
 		this.environment = this.environment.beginScope();
 		var typename = this.name_generator.generateStackFrameName();
-		var stackframe = new StackFrame(typename, this.current_frame);
+		var stackframe = new StackFrameOld(typename, this.current_frame);
 		this.stackframes.add(stackframe);
 		this.current_frame = stackframe;
 		this.current_depth += 1;
 	}
 
-	public Variable define(String name) {
+	public Variable define(String name, ValueType type) {
 		var variable_name = this.name_generator.generateVariableName();
-		this.current_frame.addVariable(variable_name);
+		this.current_frame.define(variable_name, null); // TODO: descriptor
 		var variable = new Variable(this.current_depth, variable_name, this.current_frame);
 		this.environment.define(name, variable);
 		return variable;
@@ -72,7 +73,7 @@ class JvmEnvironment {
 		this.environment = this.environment.endScope();
 	}
 
-	public List<StackFrame> getStackFrames() {
+	public List<StackFrameOld> getStackFrames() {
 		return List.copyOf(this.stackframes);
 	}
 }

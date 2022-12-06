@@ -146,13 +146,16 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptVar(AstVar node) {
 		var value = this.environment.lookup(node.name);
+		if (value == null)
+			throw new RuntimeException("Variable " + node.name + " is not defined\n" + this.environment);
 		this.value = value;
 	}
 
 	@Override
 	public void acceptCall(AstCall call) {
 		var fnvalue = InterpretorStage.interpret(this.environment, call.function).getFunction();
-		this.value = fnvalue.evaluate(call.arguments);
+		var arguments = call.arguments.stream().map(arg -> InterpretorStage.interpret(this.environment, arg)).toList();
+		this.value = fnvalue.evaluate(arguments);
 	}
 
 	@Override
@@ -192,7 +195,10 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptPrint(AstPrint print) {
 		var value = InterpretorStage.interpret(this.environment, print.expr);
-		System.out.println(value);
+		if (print.newline)
+			System.out.println(value);
+		else
+			System.out.print(value);
 		this.value = Value.createVoid();
 	}
 
@@ -206,9 +212,9 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptFn(AstFn fn) {
 		var type = fn.getAnnotation(TypeCheckStage.TYPE_KEY);
-		var env = this.environment.beginScope();
+		var fnenv = this.environment.beginScope();
 		var body = fn.body;
-		var fnvalue = Value.createFunction(type, env, fn.arguments, body);
+		var fnvalue = Value.createFunction(type, fnenv, fn.arguments, body);
 		this.value = fnvalue;
 	}
 

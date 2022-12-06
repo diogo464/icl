@@ -220,7 +220,6 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptPrint(AstPrint print) {
-		System.out.println(this.env);
 		TypeCheckStage.check(this.env, print.expr);
 		print.annotate(TypeCheckStage.TYPE_KEY, ValueType.createVoid());
 	}

@@ -21,12 +21,12 @@ import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
 
-class Visitor implements AstVisitor {
+class PrettyVisitor implements AstVisitor {
 	private final boolean print_annotations;
 	private final StringBuilder builder;
 	private int indent;
 
-	public Visitor(boolean print_annotations) {
+	public PrettyVisitor(boolean print_annotations) {
 		this.print_annotations = print_annotations;
 		this.builder = new StringBuilder();
 		this.indent = 0;
@@ -77,7 +77,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptBinOp(AstBinOp node) {
-		var op = PrettyPrinterStage.binOpKindToString(node.kind);
+		var op = PrintCommon.binOpKindToString(node.kind);
 		print("(");
 		node.left.accept(this);
 		print(" ", op, " ");
@@ -87,7 +87,7 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptUnaryOp(AstUnaryOp node) {
-		var op = PrettyPrinterStage.unaryOpKindToString(node.kind);
+		var op = PrintCommon.unaryOpKindToString(node.kind);
 		print(op);
 		node.expr.accept(this);
 	}
@@ -193,7 +193,7 @@ class Visitor implements AstVisitor {
 	public void acceptFn(AstFn fn) {
 		print("fn(");
 		for (var arg : fn.arguments)
-			print(arg.name, ": ", arg.type.toString());
+			print(arg.name, ": ", arg.type.toString(), ",");
 		print(")");
 		if (fn.ret.isPresent())
 			print(" -> ", fn.ret.get().toString());

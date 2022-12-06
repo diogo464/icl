@@ -1,0 +1,10 @@
+{
+    println ~true;
+    println ~false;
+    println ~~true;
+    println ~~false;
+    println ~~~true;
+    println ~~~false;
+    println ~~~~true;
+    println ~~~~false;
+};;

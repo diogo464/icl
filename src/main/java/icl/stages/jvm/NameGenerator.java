@@ -1,6 +1,6 @@
 package icl.stages.jvm;
 
-class NameGenerator {
+public class NameGenerator {
 	private int stackframes;
 	private int variables;
 

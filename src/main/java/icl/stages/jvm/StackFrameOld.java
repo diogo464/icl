@@ -6,17 +6,17 @@ import java.util.List;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
-class StackFrame {
+class StackFrameOld {
 	public static final String PARENT_VARNAME = "parent";
 
 	private final String typename;
-	private final StackFrame parent;
-	private final List<String> variables;
+	private final StackFrameOld parent;
+	private final List<StackFrameField> fields;
 
-	StackFrame(String typename, StackFrame parent) {
+	StackFrameOld(String typename, StackFrameOld parent) {
 		this.typename = typename;
 		this.parent = parent;
-		this.variables = new ArrayList<>();
+		this.fields = new ArrayList<>();
 	}
 
 	public String getTypename() {
@@ -24,9 +24,9 @@ class StackFrame {
 	}
 
 	/**
-	 * @return {@link StackFrame} The parent stackframe or null.
+	 * @return {@link StackFrameOld} The parent stackframe or null.
 	 */
-	public StackFrame getParent() {
+	public StackFrameOld getParent() {
 		return this.parent;
 	}
 
@@ -36,11 +36,11 @@ class StackFrame {
 		return "java/lang/Object";
 	}
 
-	public void addVariable(String variable) {
-		this.variables.add(variable);
+	public void define(String name, String descriptor) {
+		this.fields.add(new StackFrameField(name, descriptor));
 	}
 
-	public JvmCompiler.CompiledClass compile() {
+	public CompiledClass compile() {
 		var writer = new ClassWriter(0);
 		writer.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, this.typename, null,
 				"java/lang/Object", null);
@@ -50,8 +50,8 @@ class StackFrame {
 		else
 			writer.visitField(Opcodes.ACC_PUBLIC, PARENT_VARNAME, "L" + this.parent.getTypename() + ";", null, null);
 
-		for (var variable : this.variables)
-			writer.visitField(Opcodes.ACC_PUBLIC, variable, "I", null, null);
+		for (var field : this.fields)
+			writer.visitField(Opcodes.ACC_PUBLIC, field.name, field.descriptor, null, null);
 
 		var init = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
 		init.visitCode();
@@ -62,6 +62,6 @@ class StackFrame {
 		init.visitEnd();
 
 		writer.visitEnd();
-		return new JvmCompiler.CompiledClass(this.typename, writer.toByteArray());
+		return new CompiledClass(this.typename, writer.toByteArray());
 	}
 }

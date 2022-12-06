@@ -7,7 +7,9 @@ import java.io.InputStream;
 import icl.pipeline.Pipeline;
 import icl.stages.interpretor.InterpretorStage;
 import icl.stages.interpretor.value.Value;
+import icl.stages.jvm.Compiler;
 import icl.stages.parser.ParserStage;
+import icl.stages.print.NodePrinterStage;
 import icl.stages.print.PrettyPrinterStage;
 import icl.stages.typecheck.TypeCheckStage;
 
@@ -29,13 +31,21 @@ public class App {
 		switch (command) {
 			case "compile" -> commandCompile(command_args);
 			case "print" -> commandPrint(command_args);
+			case "pretty" -> commandPrettyPrint(command_args);
 			case "run" -> commandRun(command_args);
 			case "interactive" -> commandInteractive();
+			case "test" -> commandTest();
 			default -> {
 				System.err.println("Unknown command: " + command);
 				System.exit(1);
 			}
 		}
+	}
+
+	private static void commandTest() throws FileNotFoundException {
+		var source_stream = getFileStream("main.calc");
+		var node = Pipeline.begin(Pipeline.<InputStream>forward()).add(new ParserStage()).process(source_stream);
+		Compiler.printStackFrames(node);
 	}
 
 	private static void commandCompile(String[] args) throws IOException {
@@ -64,11 +74,17 @@ public class App {
 		System.out.print(output);
 	}
 
+	private static void commandPrettyPrint(String[] args) throws FileNotFoundException {
+		var source_stream = getFileStream(args[0]);
+		var pipeline = prettyPrintPipeline();
+		var output = pipeline.process(source_stream);
+		System.out.print(output);
+	}
+
 	private static void commandRun(String[] args) throws FileNotFoundException {
 		var source_stream = getFileStream(args[0]);
 		var pipeline = interpretorPipeline();
-		var value = pipeline.process(source_stream);
-		System.out.println(value);
+		pipeline.process(source_stream);
 	}
 
 	private static void commandInteractive() {
@@ -94,11 +110,17 @@ public class App {
 				.add(new InterpretorStage());
 	}
 
-	private static Pipeline<InputStream, String> printPipeline() {
+	private static Pipeline<InputStream, Void> printPipeline() {
 		return Pipeline
 				.begin(Pipeline.<InputStream>forward())
 				.add(new ParserStage())
-				.add(new TypeCheckStage())
+				.add(new NodePrinterStage());
+	}
+
+	private static Pipeline<InputStream, String> prettyPrintPipeline() {
+		return Pipeline
+				.begin(Pipeline.<InputStream>forward())
+				.add(new ParserStage())
 				.add(new PrettyPrinterStage());
 	}
 }

@@ -58,6 +58,7 @@ TOKEN :
 	< SEMICOL	: ";"												> |
 	< EQ		: "="												> |
 	< CMP		: "=="												> |
+	< NCMP		: "~="												> |
 	< GT		: ">"												> |
 	< GTE		: ">="												> |
 	< LT		: "<"												> |
@@ -133,12 +134,13 @@ AstNode ExprWhile():
 AstNode ExprPrint():
 {
 	var n 			= (Token) null;
+	var nn 			= (Token) null;
 	var expr 		= (AstNode) null;
 }
 {
-	(n = <KW_PRINT> | n = <KW_PRINTLN>) (expr = Expr())?
-	{ if (expr == null) { expr = Parser.astEmptyNode(Parser.span(n)); } }
-	{ return Parser.astPrint(Parser.span(n, expr), expr); }
+	(n = <KW_PRINT> | nn = <KW_PRINTLN>) (expr = Expr())?
+	{ if (expr == null) { expr = Parser.astEmptyNode(Parser.span(n == null ? nn : n)); } }
+	{ return Parser.astPrint(Parser.span(n == null ? nn : n, expr), expr, nn != null); }
 }
 
 AstNode ExprTypeAlias():
@@ -252,10 +254,12 @@ AstNode ExprCmp():
 }
 {
 	l = ExprRel() ( 
-		(op = <CMP>) r = ExprRel()
+		(op = <CMP> | op = <NCMP>) r = ExprRel()
 		{ 
 			if( op != null ) {
 				l = Parser.astBinOp(AstBinOp.Kind.CMP, l, r);
+				if(op.kind == NCMP)
+					l = Parser.astUnaryOp(AstUnaryOp.Kind.LNOT, l);
 			}
 		}
 	)*
@@ -322,14 +326,13 @@ AstNode ExprMulDiv():
 AstNode ExprUnary():
 { 
 	var n 	= (Token) null;
-	var e 	= (AstNode) null;
 	var k 	= (ArrayList<AstUnaryOp.Kind>) null;
 	var t 	= (AstNode) null;
 }
 {
 	( 
 		(
-			n = <PLUS> | n = <MINUS> | n = <LNOT> | n = <DEREF>
+			(n = <PLUS> | n = <MINUS> | n = <LNOT> | n = <DEREF>)
 			{ 
 			if ( k == null ) { k = new ArrayList<>(); }
 			if ( n.kind == PLUS ) { k.add(AstUnaryOp.Kind.POS); }
@@ -338,12 +341,12 @@ AstNode ExprUnary():
 			else if ( n.kind == DEREF ) { k.add(AstUnaryOp.Kind.DEREF); }
 			}
 		)* 
-		t = ExprCall() 
+		t = ExprCall()
 	)
 	{
 		if( k == null ) {
 			return t;
-		}else {
+		} else {
 			AstNode tmp = t;
 			for( var kind : k )
 				tmp = Parser.astUnaryOp(kind, tmp);
@@ -362,19 +365,16 @@ AstNode ExprCall():
 {
 	func = ExprField()
 	(
+		{arguments = new ArrayList<>();}
 		<LPAREN>
 		(
 			argument = Expr() {arguments.add(argument);}
 			(<COMMA> argument = Expr() {arguments.add(argument);})*
 		)?
 		endToken = <RPAREN>
-	)?
-	{
-		if(endToken != null)
-			return Parser.astCall(Parser.span(func, endToken), func, arguments);
-		else
-			return func;
-	}
+		{func = Parser.astCall(Parser.span(func, endToken), func, arguments);}
+	)*
+	{ return func; }
 }
 
 AstNode ExprField():

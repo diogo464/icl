@@ -1,0 +1,13 @@
+{
+    let x = 10;
+    if x == 10 { println "X is 10"; } else { println "X is not 10"; };
+    let y = if x == 10 { 10 } else { 0 };
+    if x == 11 {
+        println "X is 11";
+    } else if x == 12 {
+        println "X is 12";
+    } else {
+        println "X is not 12 or 11";
+    };
+    println y;
+};;

@@ -22,14 +22,14 @@ public class FnValue extends Value {
         assert type.getKind() == ValueType.Kind.Function;
     }
 
-    public Value evaluate(List<AstNode> arguments) {
+    public Value evaluate(List<Value> arguments) {
         var eval_env = this.env.beginScope();
         for (var i = 0; i < arguments.size(); ++i) {
             var farg = this.args.get(i);
             var arg = arguments.get(i);
-            var argvalue = InterpretorStage.interpret(eval_env, arg);
-            eval_env.define(farg.name, argvalue);
+            eval_env.define(farg.name, arg);
         }
         return InterpretorStage.interpret(eval_env, this.body);
     }
+
 }

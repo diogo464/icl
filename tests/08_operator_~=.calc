@@ -1,0 +1,12 @@
+{
+    let x = 10;
+    let y = 20;
+    let z = 20;
+
+    println x ~= 10;
+    println 10 ~= x;
+    println x ~= 15;
+    println x ~= y;
+    println y ~= z;
+    println z ~= y;
+};;
