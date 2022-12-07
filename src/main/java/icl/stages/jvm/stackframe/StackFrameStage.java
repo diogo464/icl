@@ -1,6 +1,5 @@
 package icl.stages.jvm.stackframe;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Stack;
 
@@ -26,8 +25,8 @@ import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
 import icl.pipeline.PipelineStage;
-import icl.stages.jvm.Context;
 import icl.stages.jvm.Compiler;
+import icl.stages.jvm.Context;
 import icl.stages.jvm.NameGenerator;
 
 public class StackFrameStage implements PipelineStage<AstNode, AstNode> {
@@ -85,9 +84,10 @@ public class StackFrameStage implements PipelineStage<AstNode, AstNode> {
         @Override
         public void acceptScope(AstScope node) {
             var parent = this.frames.isEmpty() ? null : this.frames.peek();
-            var stackframe = StackFrame.fromScope(this.nameGenerator, Optional.ofNullable(parent), node);
+            var stackframe = StackFrame.fromScope(this.nameGenerator, this.context, Optional.ofNullable(parent), node);
             this.context.registerStackFrame(stackframe);
             this.frames.push(stackframe);
+            this.annotateNode(node);
             for (var stmt : node.stmts)
                 stmt.accept(this);
             node.expr.accept(this);
@@ -180,9 +180,10 @@ public class StackFrameStage implements PipelineStage<AstNode, AstNode> {
 
     @Override
     public AstNode process(AstNode input) {
-        var scope = new AstScope(List.of(input), new AstEmptyNode());
+        // var scope = new AstScope(List.of(input), new AstEmptyNode());
         var visitor = new Visitor(this.nameGenerator, this.context);
-        scope.accept(visitor);
+        input.accept(visitor);
+        // scope.accept(visitor);
         return input;
     }
 

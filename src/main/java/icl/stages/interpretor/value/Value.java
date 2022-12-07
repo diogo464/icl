@@ -32,6 +32,12 @@ public abstract class Value {
 		throw new RuntimeException("Value is not a boolean");
 	}
 
+	public final StringValue getString() {
+		if (this instanceof StringValue)
+			return ((StringValue) this);
+		throw new RuntimeException("Value is not a string");
+	}
+
 	public final RefValue getReference() {
 		if (this instanceof RefValue)
 			return ((RefValue) this);

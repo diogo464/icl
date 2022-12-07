@@ -1,20 +1,24 @@
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.nio.file.Files;
 
 import icl.pipeline.Pipeline;
 import icl.stages.interpretor.InterpretorStage;
 import icl.stages.interpretor.value.Value;
 import icl.stages.jvm.Compiler;
+import icl.stages.jvm.CompilerStage;
 import icl.stages.parser.ParserStage;
 import icl.stages.print.NodePrinterStage;
 import icl.stages.print.PrettyPrinterStage;
 import icl.stages.typecheck.TypeCheckStage;
 
 public class App {
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		if (args.length == 0) {
 			System.err.println("Usage:");
 			System.err.println("compile <input file>");
@@ -33,6 +37,7 @@ public class App {
 			case "print" -> commandPrint(command_args);
 			case "pretty" -> commandPrettyPrint(command_args);
 			case "run" -> commandRun(command_args);
+			case "crun" -> commandCompileAndRun(command_args);
 			case "interactive" -> commandInteractive();
 			case "test" -> commandTest();
 			default -> {
@@ -49,22 +54,21 @@ public class App {
 	}
 
 	private static void commandCompile(String[] args) throws IOException {
-		// var source_stream = getFileStream(args[0]);
-		// var source_str = new String(source_stream.readAllBytes());
-		// var source = source_str.getBytes();
-		// System.out.println("SOURCE\n'" + source_str + "'");
+		var source_stream = getFileStream(args[0]);
+		var output = Pipeline
+				.begin(Pipeline.<InputStream>forward())
+				.add(new ParserStage())
+				.add(new TypeCheckStage())
+				.add(new CompilerStage())
+				.process(source_stream);
 
-		// var node = Parser.parse(new ByteArrayInputStream(source));
-		// var compiled_classes = JvmCompiler.compile(Mir.toMir(node));
-
-		// for (var compiled_class : compiled_classes) {
-		// var class_name = compiled_class.name;
-		// var class_bytes = compiled_class.bytecode;
-		// var class_file = new FileOutputStream("calc_target/" + class_name +
-		// ".class");
-		// class_file.write(class_bytes);
-		// class_file.close();
-		// }
+		for (var compiled_class : output.classes) {
+			var class_name = compiled_class.name;
+			var class_bytes = compiled_class.bytecode;
+			var class_file = new FileOutputStream("calc_target/" + class_name + ".class");
+			class_file.write(class_bytes);
+			class_file.close();
+		}
 	}
 
 	private static void commandPrint(String[] args) throws FileNotFoundException {
@@ -85,6 +89,12 @@ public class App {
 		var source_stream = getFileStream(args[0]);
 		var pipeline = interpretorPipeline();
 		pipeline.process(source_stream);
+	}
+
+	private static void commandCompileAndRun(String[] args) throws IOException, InterruptedException {
+		commandCompile(args);
+		var stdout = Runtime.getRuntime().exec("java -cp calc_target Main").getInputStream();
+		stdout.transferTo(System.out);
 	}
 
 	private static void commandInteractive() {

@@ -1,6 +1,9 @@
 package icl.pipeline;
 
+import java.util.function.Function;
+
 public class Pipeline<In, Out> implements PipelineStage<In, Out> {
+
     private final PipelineStage<In, Out> stage;
 
     private Pipeline(PipelineStage<In, Out> stage) {
@@ -24,4 +27,12 @@ public class Pipeline<In, Out> implements PipelineStage<In, Out> {
         return new ForwardPipelineStage<>();
     }
 
+    public static <I, R> PipelineStage<I, R> function(Function<I, R> function) {
+        return new PipelineStage<I, R>() {
+            @Override
+            public R process(I input) {
+                return function.apply(input);
+            }
+        };
+    }
 }

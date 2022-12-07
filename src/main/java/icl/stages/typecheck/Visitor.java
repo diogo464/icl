@@ -76,6 +76,17 @@ class Visitor implements AstVisitor {
 					leftType = ValueType.createBoolean();
 				}
 			}
+			case String -> {
+				if (!CalcUtils.oneOf(node.kind, AstBinOp.Kind.ADD, AstBinOp.Kind.CMP)) {
+					throw new TypeCheckException("Invalid binary operator for string", node);
+				}
+
+				switch (node.kind) {
+					case CMP -> leftType = ValueType.createBoolean();
+					case ADD -> leftType = ValueType.createString();
+					default -> throw new TypeCheckException("Invalid binary operator for string", node);
+				}
+			}
 			default -> throw new TypeCheckException("BinaryOp operands must be boolean or number", node);
 		}
 

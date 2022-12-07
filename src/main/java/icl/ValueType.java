@@ -25,6 +25,18 @@ public class ValueType {
 			this.target = target;
 		}
 
+		public ValueType getReferenceTarget() {
+			if (this.target.getKind() == Kind.Reference)
+				return this.target.getReference().getReferenceTarget();
+			return this.target;
+		}
+
+		public int getReferenceDepth() {
+			if (this.target.getKind() == Kind.Reference)
+				return 1 + this.target.getReference().getReferenceDepth();
+			return 1;
+		}
+
 		@Override
 		public boolean equals(Object other) {
 			if (other == null || !(other instanceof Reference))

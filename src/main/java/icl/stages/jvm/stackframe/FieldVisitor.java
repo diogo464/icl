@@ -8,8 +8,8 @@ import icl.ast.AstDecl;
 import icl.ast.AstFn;
 import icl.ast.AstScope;
 import icl.ast.BaseAstVisitor;
+import icl.stages.jvm.Context;
 import icl.stages.jvm.NameGenerator;
-import icl.stages.jvm.TypeDescriptor;
 import icl.stages.typecheck.TypeCheckStage;
 
 // Visits AstNodes and gathers all variable declarations.
@@ -17,10 +17,12 @@ import icl.stages.typecheck.TypeCheckStage;
 public class FieldVisitor extends BaseAstVisitor {
 
     private final NameGenerator nameGenerator;
+    private final Context context;
     private final List<StackFrameField> fields;
 
-    public FieldVisitor(NameGenerator nameGenerator) {
+    public FieldVisitor(NameGenerator nameGenerator, Context context) {
         this.nameGenerator = nameGenerator;
+        this.context = context;
         this.fields = new ArrayList<>();
     }
 
@@ -33,7 +35,7 @@ public class FieldVisitor extends BaseAstVisitor {
         var name = node.name;
         var type = node.value.getAnnotation(TypeCheckStage.TYPE_KEY);
         var field = this.nameGenerator.generateVariableName();
-        var descriptor = TypeDescriptor.fromValueType(type);
+        var descriptor = this.context.descriptorFromValueType(type);
         this.fields.add(new StackFrameField(name, type, field, descriptor));
     }
 

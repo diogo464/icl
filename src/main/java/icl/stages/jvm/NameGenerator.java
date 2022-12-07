@@ -3,10 +3,12 @@ package icl.stages.jvm;
 public class NameGenerator {
 	private int stackframes;
 	private int variables;
+	private int references;
 
 	public NameGenerator() {
 		this.stackframes = 0;
 		this.variables = 0;
+		this.references = 0;
 	}
 
 	public String generateStackFrameName() {
@@ -15,5 +17,9 @@ public class NameGenerator {
 
 	public String generateVariableName() {
 		return "var_" + this.variables++;
+	}
+
+	public String generateReferenceName() {
+		return "ref_" + this.references++;
 	}
 }

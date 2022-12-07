@@ -83,6 +83,16 @@ class Visitor implements AstVisitor {
 				};
 				this.value = value;
 			}
+			case String -> {
+				var left = InterpretorStage.interpret(this.environment, node.left).getString().getValue();
+				var right = InterpretorStage.interpret(this.environment, node.right).getString().getValue();
+				var value = switch (node.kind) {
+					case ADD -> Value.createString(left + right);
+					case CMP -> Value.createBoolean(left.equals(right));
+					default -> throw new IllegalStateException();
+				};
+				this.value = value;
+			}
 			default -> throw new IllegalStateException();
 		}
 	}

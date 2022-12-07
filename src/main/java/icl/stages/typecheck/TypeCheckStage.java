@@ -16,6 +16,7 @@ import icl.pipeline.PipelineStage;
  *		AllowedTypes:
  *			Number: 	ADD, SUB, MUL, DIV, CMP, GT, GTE, LT, LTE
  *			Boolean:	CMP, LAND, LOR
+ *          String:     ADD, CMP
  *
  *	Call:
  *		function:  Must be a Function with correct argument types 
