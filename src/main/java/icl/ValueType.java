@@ -61,11 +61,34 @@ public class ValueType {
 		}
 
 		@Override
-		public boolean equals(Object other) {
-			if (other == null || !(other instanceof Function))
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((args == null) ? 0 : args.hashCode());
+			result = prime * result + ((ret == null) ? 0 : ret.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
 				return false;
-			var otherf = (Function) other;
-			return Objects.equals(this.ret, otherf.ret) && Objects.equals(this.args, otherf.args);
+			if (getClass() != obj.getClass())
+				return false;
+			Function other = (Function) obj;
+			if (args == null) {
+				if (other.args != null)
+					return false;
+			} else if (!args.equals(other.args))
+				return false;
+			if (ret == null) {
+				if (other.ret != null)
+					return false;
+			} else if (!ret.equals(other.ret))
+				return false;
+			return true;
 		}
 
 		@Override
@@ -222,8 +245,16 @@ public class ValueType {
 		if (other == null || !(other instanceof ValueType))
 			return false;
 		var otherv = (ValueType) other;
-		return Objects.equals(this.kind, otherv.kind) && Objects.equals(this.reference, otherv.reference)
-				&& Objects.equals(this.function, otherv.function);
+		return Objects.equals(this.kind, otherv.kind)
+				&& Objects.equals(this.reference, otherv.reference)
+				&& Objects.equals(this.function, otherv.function)
+				&& Objects.equals(this.record, otherv.record)
+				&& Objects.equals(this.alias, otherv.alias);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.kind, this.reference, this.function, this.record, this.alias);
 	}
 
 	@Override

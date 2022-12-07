@@ -39,6 +39,12 @@ public class CompilerVisitor implements AstVisitor {
         this.method = method;
     }
 
+    /**
+     * Pushes a stack frame onto the stack
+     * 
+     * @param frame The starting frame
+     * @param depth The depth of the frame to push starting from the given frame
+     */
     private void pushStackFrame(StackFrame frame, int depth) {
         if (depth == 0) {
             this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
@@ -48,6 +54,16 @@ public class CompilerVisitor implements AstVisitor {
             throw new RuntimeException("Stack frame has no parent");
         this.pushStackFrame(frame.parent.get(), depth - 1);
         this.method.visitFieldInsn(Opcodes.GETFIELD, frame.typename, "parent", frame.parent.get().descriptor);
+    }
+
+    private void pushStackFrameVar(StackFrame frame, String name) {
+        var lookup = frame.lookup(name).get();
+        this.pushStackFrame(frame, lookup.depth);
+        this.method.visitFieldInsn(
+                Opcodes.GETFIELD,
+                lookup.frame.typename,
+                lookup.field.field,
+                lookup.field.descriptor);
     }
 
     private void pushVoid() {
@@ -233,8 +249,9 @@ public class CompilerVisitor implements AstVisitor {
             case Reference -> {
                 switch (node.kind) {
                     case DEREF -> {
-                        var typename = this.context.registerReference(operand_type).typename;
-                        var descriptor = this.context.descriptorFromValueType(operand_type);
+                        var target = operand_type.getReference().target;
+                        var typename = this.context.registerReference(target).typename;
+                        var descriptor = this.context.descriptorFromValueType(target);
                         this.method.visitFieldInsn(Opcodes.GETFIELD, typename, "value", descriptor);
                     }
                     default -> throw new IllegalStateException();
@@ -242,7 +259,6 @@ public class CompilerVisitor implements AstVisitor {
             }
             default -> throw new IllegalStateException();
         }
-
     }
 
     @Override
@@ -265,7 +281,6 @@ public class CompilerVisitor implements AstVisitor {
                 stackframe.typename,
                 lookup.field.field,
                 lookup.field.descriptor);
-        this.pushVoid();
     }
 
     @Override
@@ -308,11 +323,8 @@ public class CompilerVisitor implements AstVisitor {
                 parentDescriptor);
         this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
 
-        for (var stmt : node.stmts) {
+        for (var stmt : node.stmts)
             stmt.accept(this);
-            // Pop the result of the statement
-            this.method.visitInsn(Opcodes.POP);
-        }
         node.expr.accept(this);
 
         this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
@@ -326,7 +338,6 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptEmptyNode(AstEmptyNode node) {
-        this.pushVoid();
     }
 
     @Override
@@ -337,13 +348,14 @@ public class CompilerVisitor implements AstVisitor {
         // Push GETFIELD instruction
 
         var stackframe = node.getAnnotation(Compiler.STACK_FRAME_KEY);
-        var lookup = stackframe.lookup(node.name).get();
-        this.pushStackFrame(stackframe, lookup.depth);
-        this.method.visitFieldInsn(
-                Opcodes.GETFIELD,
-                lookup.frame.typename,
-                lookup.field.field,
-                lookup.field.descriptor);
+        this.pushStackFrameVar(stackframe, node.name);
+        // var lookup = stackframe.lookup(node.name).get();
+        // this.pushStackFrame(stackframe, lookup.depth);
+        // this.method.visitFieldInsn(
+        // Opcodes.GETFIELD,
+        // lookup.frame.typename,
+        // lookup.field.field,
+        // lookup.field.descriptor);
     }
 
     @Override
@@ -390,11 +402,8 @@ public class CompilerVisitor implements AstVisitor {
         this.method.visitInsn(Opcodes.ICONST_1);
         this.method.visitJumpInsn(Opcodes.IF_ICMPNE, end_label);
         loop.body.accept(this);
-        // Pop value pushed by body
-        this.method.visitInsn(Opcodes.POP);
         this.method.visitJumpInsn(Opcodes.GOTO, cond_label);
         this.method.visitLabel(end_label);
-        this.pushVoid();
     }
 
     @Override
@@ -405,28 +414,43 @@ public class CompilerVisitor implements AstVisitor {
         // Push assign.value to stack
         // Push PUTFIELD instruction
 
-        var value_type = assign.value.getAnnotation(TypeCheckStage.TYPE_KEY);
         var stackframe = assign.getAnnotation(Compiler.STACK_FRAME_KEY);
         var lookup = stackframe.lookup(assign.name).get();
-        this.pushStackFrame(stackframe, lookup.depth);
-        assign.value.accept(this);
+        var ltype = lookup.field.type;
+        var rtype = assign.value.getAnnotation(TypeCheckStage.TYPE_KEY);
 
-        if (value_type.isKind(ValueType.Kind.Reference)) {
-            // assign to value field
-            var reference = this.context.registerReference(value_type.getReference().target);
-            this.method.visitFieldInsn(
-                    Opcodes.PUTFIELD,
-                    reference.typename,
-                    "value",
-                    lookup.field.descriptor);
-        } else {
+        // Special case rvalue void
+        if (rtype.isKind(ValueType.Kind.Void)) {
+            this.method.visitInsn(Opcodes.ACONST_NULL);
             this.method.visitFieldInsn(
                     Opcodes.PUTFIELD,
                     lookup.frame.typename,
                     lookup.field.field,
                     lookup.field.descriptor);
+            return;
         }
-        this.pushVoid();
+
+        // Special case lvalue reference
+        if (ltype.isKind(ValueType.Kind.Reference)) {
+            var reference = this.context.registerReference(ltype.getReference().target);
+            var target_descriptor = this.context.descriptorFromValueType(rtype);
+
+            this.pushStackFrameVar(stackframe, assign.name);
+            assign.value.accept(this);
+            this.method.visitFieldInsn(
+                    Opcodes.PUTFIELD,
+                    reference.typename,
+                    "value",
+                    target_descriptor);
+            return;
+        }
+
+        assign.value.accept(this);
+        this.method.visitFieldInsn(
+                Opcodes.PUTFIELD,
+                lookup.frame.typename,
+                lookup.field.field,
+                lookup.field.descriptor);
     }
 
     @Override
@@ -453,7 +477,6 @@ public class CompilerVisitor implements AstVisitor {
         var method_name = print.newline ? "println" : "print";
         this.method.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream",
                 method_name, "(Ljava/lang/String;)V", false);
-        this.pushVoid();
     }
 
     @Override
