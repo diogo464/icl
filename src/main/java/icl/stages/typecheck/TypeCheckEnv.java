@@ -5,11 +5,11 @@ import icl.ValueType;
 
 public class TypeCheckEnv {
     // Value namespace
-    public final Environment<ValueType> value;
+    public final Environment<Variable> value;
     // Type namespace
     public final Environment<ValueType> type;
 
-    public TypeCheckEnv(Environment<ValueType> value, Environment<ValueType> type) {
+    public TypeCheckEnv(Environment<Variable> value, Environment<ValueType> type) {
         this.value = value;
         this.type = type;
     }

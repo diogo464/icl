@@ -122,15 +122,15 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptDecl(AstDecl node) {
 		var value = TypeCheckStage.check(this.env, node.value);
-		var valueType = value.getAnnotation(TypeCheckStage.TYPE_KEY);
+		var vtype = value.getAnnotation(TypeCheckStage.TYPE_KEY);
 		if (node.type.isPresent()) {
 			var declType = this.resolve(node.type.get());
-			if (!declType.equals(valueType))
+			if (!declType.equals(vtype))
 				throw new TypeCheckException(
-						"Declared type and value type must be the same, got " + valueType + " expected " + declType,
+						"Declared type and value type must be the same, got " + vtype + " expected " + declType,
 						node);
 		}
-		this.env.value.define(node.name, valueType);
+		this.env.value.define(node.name, new Variable(vtype, node.mutable));
 		node.annotate(TypeCheckStage.TYPE_KEY, ValueType.createVoid());
 	}
 
@@ -150,11 +150,11 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptVar(AstVar node) {
-		var type = this.env.value.lookup(node.name);
-		if (type == null)
+		var variable = this.env.value.lookup(node.name);
+		if (variable == null)
 			throw new TypeCheckException(
 					"Failed to lookup name to obtain type information: '" + node.name + "'\n" + this.env, node);
-		node.annotate(TypeCheckStage.TYPE_KEY, type);
+		node.annotate(TypeCheckStage.TYPE_KEY, variable.type);
 	}
 
 	@Override
@@ -218,13 +218,16 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptAssign(AstAssign assign) {
-		var vartype = this.env.value.lookup(assign.name);
-		if (vartype == null)
+		var variable = this.env.value.lookup(assign.name);
+		if (variable == null)
 			throw new TypeCheckException("Failed to lookup variable: '" + assign.name + "'", assign);
+		if (!variable.mutable)
+			throw new TypeCheckException("Attempt to assign to immutable variable", assign);
+		var vtype = variable.type;
 		var value = TypeCheckStage.check(this.env, assign.value);
-		if ((!vartype.isKind(ValueType.Kind.Reference) && !vartype.equals(value.getAnnotation(TypeCheckStage.TYPE_KEY)))
-				|| (vartype.isKind(ValueType.Kind.Reference)
-						&& !vartype.getReference().target.equals(value.getAnnotation(TypeCheckStage.TYPE_KEY))))
+		if ((!vtype.isKind(ValueType.Kind.Reference) && !vtype.equals(value.getAnnotation(TypeCheckStage.TYPE_KEY)))
+				|| (vtype.isKind(ValueType.Kind.Reference)
+						&& !vtype.getReference().target.equals(value.getAnnotation(TypeCheckStage.TYPE_KEY))))
 			throw new TypeCheckException("Cant assign variable to value of different type", assign);
 		assign.annotate(TypeCheckStage.TYPE_KEY, ValueType.createVoid());
 	}
@@ -246,7 +249,7 @@ class Visitor implements AstVisitor {
 	public void acceptFn(AstFn fn) {
 		var bodyenv = this.env.beginScope();
 		for (var arg : fn.arguments)
-			bodyenv.value.define(arg.name, this.resolve(arg.type));
+			bodyenv.value.define(arg.name, new Variable(this.resolve(arg.type), true));
 		var body = TypeCheckStage.check(bodyenv, fn.body);
 		if (fn.ret.isPresent()) {
 			var retType = this.resolve(fn.ret.get());
