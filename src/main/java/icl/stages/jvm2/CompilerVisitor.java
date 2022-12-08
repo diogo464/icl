@@ -46,14 +46,14 @@ public class CompilerVisitor implements AstVisitor {
      * @param depth The depth of the frame to push starting from the given frame
      */
     private void pushStackFrame(Environment frame, int depth) {
-        if (depth == 0) {
-            this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
-            return;
+        var current = frame;
+        this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
+        for (var i = 0; i < depth; i++) {
+            var typename = current.getTypename();
+            var parent_descriptor = current.getParent().getDescriptor();
+            this.method.visitFieldInsn(Opcodes.GETFIELD, typename, "parent", parent_descriptor);
+            current = current.getParent();
         }
-        if (!frame.hasParent())
-            throw new RuntimeException("Stack frame has no parent");
-        this.pushStackFrame(frame.getParent(), depth - 1);
-        this.method.visitFieldInsn(Opcodes.GETFIELD, frame.getTypename(), "parent", frame.getParent().getDescriptor());
     }
 
     private void pushVariable(String name) {
@@ -304,18 +304,20 @@ public class CompilerVisitor implements AstVisitor {
     @Override
     public void acceptCall(AstCall call) {
         var ftype = call.function.getAnnotation(TypeCheckStage.TYPE_KEY).getFunction();
+        var interface_typename = Names.typename(ftype);
         var call_descriptor = Names.callDescriptor(ftype);
+
+        call.function.accept(this);
 
         for (var arg : call.arguments)
             arg.accept(this);
 
-        call.function.accept(this);
         this.method.visitMethodInsn(
-                Opcodes.INVOKEVIRTUAL,
-                "java/lang/Object",
-                "invoke",
+                Opcodes.INVOKEINTERFACE,
+                interface_typename,
+                "call",
                 call_descriptor,
-                false);
+                true);
     }
 
     @Override
@@ -471,14 +473,17 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptField(AstField field) {
-        // TODO Auto-generated method stub
+        var vtype = field.getAnnotation(TypeCheckStage.TYPE_KEY).getRecord();
+        var record_typename = Names.typename(vtype);
+        var field_descriptor = Names.descriptor(vtype.get(field.field));
 
+        field.value.accept(this);
+        this.method.visitFieldInsn(Opcodes.GETFIELD, record_typename, field.field, field_descriptor);
     }
 
     @Override
     public void acceptTypeAlias(AstTypeAlias typeAlias) {
-        // TODO Auto-generated method stub
-
+        // Do nothing
     }
 
 }

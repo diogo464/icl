@@ -102,6 +102,14 @@ public class Compiler {
 		method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
 		var visitor = new CompilerVisitor(context, method, function.environment);
 		function.node.accept(visitor);
+
+		var return_type = function.iface.type.ret;
+		switch (return_type.getKind()) {
+			case Boolean, Number -> method.visitInsn(Opcodes.IRETURN);
+			case Function, Record, Reference, String -> method.visitInsn(Opcodes.ARETURN);
+			case Void -> method.visitInsn(Opcodes.RETURN);
+			default -> throw new IllegalStateException();
+		}
 		method.visitInsn(Opcodes.RETURN);
 		method.visitEnd();
 

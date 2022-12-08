@@ -81,9 +81,10 @@ public class Compiler {
     }
 
     public static CompiledClass compile(Environment env, String typename, AstFn fn) {
-        var vtype = fn.getAnnotation(TypeCheckStage.TYPE_KEY).getFunction();
-        var interface_typename = Names.typename(vtype);
-        var call_descriptor = Names.callDescriptor(vtype);
+        var context = env.getContext();
+        var ftype = fn.getAnnotation(TypeCheckStage.TYPE_KEY).getFunction();
+        var interface_typename = Names.typename(ftype);
+        var call_descriptor = Names.callDescriptor(ftype);
         var function_typename = typename;
         var environment_descriptor = env.getDescriptor();
 
@@ -93,17 +94,57 @@ public class Compiler {
         });
         cwriter.visitField(Opcodes.ACC_PUBLIC, "frame", environment_descriptor, null, null);
 
+        generateDefaultInitMethod(cwriter);
+
         var method = cwriter.visitMethod(Opcodes.ACC_PUBLIC, "call", call_descriptor, null, null);
         method.visitCode();
         method.visitMaxs(256, 256);
 
-        // Load frame field into SL INDEX
+        // Prepare new environment to store arguments in
+        var fenv = env.begin();
+        Compiler.compileBasicNew(method, fenv.getTypename());
+        method.visitInsn(Opcodes.DUP);
         method.visitVarInsn(Opcodes.ALOAD, 0);
-        method.visitFieldInsn(Opcodes.GETFIELD, function_typename, "frame", env.getDescriptor());
+        method.visitFieldInsn(Opcodes.GETFIELD, function_typename, "frame", environment_descriptor);
+        method.visitFieldInsn(Opcodes.PUTFIELD, fenv.getTypename(), "parent", environment_descriptor);
+
+        for (var i = 1; i <= fn.arguments.size(); ++i) {
+            var arg = fn.arguments.get(i - 1);
+            var arg_type = ftype.args.get(i - 1);
+            var arg_name = arg.name;
+            var arg_index = i;
+
+            // Duplicate the environment
+            method.visitInsn(Opcodes.DUP);
+
+            // Load the argument to the stack
+            switch (arg_type.getKind()) {
+                case Boolean, Number -> method.visitVarInsn(Opcodes.ILOAD, arg_index);
+                case Function, Record, Reference, String -> method.visitVarInsn(Opcodes.ALOAD, arg_index);
+                default -> throw new IllegalStateException();
+            }
+
+            // Define the argument in the environment
+            var field = fenv.define(arg_name, arg_type);
+
+            // Store the argument in the environment
+            method.visitFieldInsn(Opcodes.PUTFIELD, fenv.getTypename(), field.field, field.descriptor);
+        }
+
+        // Store the environment in the frame field
         method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
-        var visitor = new CompilerVisitor(env, method);
+
+        var visitor = new CompilerVisitor(fenv, method);
         fn.body.accept(visitor);
-        method.visitInsn(Opcodes.RETURN);
+        context.compile(fenv);
+
+        var return_type = ftype.ret;
+        switch (return_type.getKind()) {
+            case Boolean, Number -> method.visitInsn(Opcodes.IRETURN);
+            case Function, Record, Reference, String -> method.visitInsn(Opcodes.ARETURN);
+            case Void -> method.visitInsn(Opcodes.RETURN);
+            default -> throw new IllegalStateException();
+        }
         method.visitEnd();
 
         return new CompiledClass(function_typename, cwriter.toByteArray());

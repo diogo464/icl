@@ -1,0 +1,317 @@
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/environment_0.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/environment_0.j
+0.00698614120483  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/environment_1.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/environment_1.j
+0.00745296478271  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/environment_2.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/environment_2.j
+0.00507211685181  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/environment_3.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/environment_3.j
+0.00491118431091  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/environment_4.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/environment_4.j
+0.00435400009155  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/environment_5.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/environment_5.j
+0.0064799785614  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/fn_nR_n.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/fn_nR_n.j
+0.00538301467896  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/function_0.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/function_0.j
+0.009596824646  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/function_1.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/function_1.j
+0.00932288169861  seconds elapsed
+Krakatau  Copyright (C) 2012-22  Robert Grosse
+This program is provided as open source under the GNU General Public License.
+See LICENSE.TXT for more details.
+
+processing target calc_target/Main.class, 1/1 remaining
+Class written to /tmp/tmp.4wiVMwUMgB/calc_target/Main.j
+0.00665402412415  seconds elapsed
+.version 49 0 
+.class public Main 
+.super java/lang/Object 
+
+.method public static main : ([Ljava/lang/String;)V 
+    .code stack 256 locals 256 
+L0:     new environment_0 
+L3:     dup 
+L4:     invokespecial Method environment_0 <init> ()V 
+L7:     astore_3 
+L8:     new environment_1 
+L11:    dup 
+L12:    invokespecial Method environment_1 <init> ()V 
+L15:    dup 
+L16:    aload_3 
+L17:    putfield Field environment_1 parent Lenvironment_0; 
+L20:    astore_3 
+L21:    aload_3 
+L22:    new function_0 
+L25:    dup 
+L26:    invokespecial Method function_0 <init> ()V 
+L29:    dup 
+L30:    aload_3 
+L31:    putfield Field function_0 frame Lenvironment_1; 
+L34:    putfield Field environment_1 variable_0 Lfn_nR_n; 
+L37:    aload_3 
+L38:    new function_1 
+L41:    dup 
+L42:    invokespecial Method function_1 <init> ()V 
+L45:    dup 
+L46:    aload_3 
+L47:    putfield Field function_1 frame Lenvironment_1; 
+L50:    putfield Field environment_1 variable_2 Lfn_nR_n; 
+L53:    getstatic Field java/lang/System out Ljava/io/PrintStream; 
+L56:    aload_3 
+L57:    getfield Field environment_1 variable_2 Lfn_nR_n; 
+L60:    sipush 1 
+L63:    invokeinterface InterfaceMethod fn_nR_n call (I)I 2 
+L68:    invokestatic Method java/lang/String valueOf (I)Ljava/lang/String; 
+L71:    invokevirtual Method java/io/PrintStream println (Ljava/lang/String;)V 
+L74:    aload_3 
+L75:    getfield Field environment_1 parent Lenvironment_0; 
+L78:    astore_3 
+L79:    return 
+L80:    
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public function_1 
+.super java/lang/Object 
+.implements fn_nR_n 
+.field public frame Lenvironment_1; 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+
+.method public call : (I)I 
+    .code stack 256 locals 256 
+L0:     new environment_4                                           [E4]
+L3:     dup                                                         [E4, E4]
+L4:     invokespecial Method environment_4 <init> ()V               [E4]
+L7:     dup                                                         [E4, E4] 
+L8:     aload_0                                                     [E4, E4, F1]
+L9:     getfield Field function_1 frame Lenvironment_1;             [E4, E4, E1]
+L12:    putfield Field environment_4 parent Lenvironment_1;         [E4]
+L15:    dup                                                         [E4, E4]        // First instruction in loop to load arguments
+L16:    iload_1                                                     [E4, E4, I1]
+L17:    putfield Field environment_4 variable_3 I                   [E4]            // Last instruction in loop to store arguments
+L20:    astore_3                                                    []              // Store the environment in the frame field
+L21:    new environment_5                                           [E5]            // Create the scope environment
+L24:    dup                                                         [E5, E5]
+L25:    invokespecial Method environment_5 <init> ()V               [E5]
+L28:    dup                                                         [E5, E5]
+L29:    aload_3                                                     [E5, E5, E4]
+L30:    putfield Field environment_5 parent Lenvironment_4;         [E5]
+L33:    astore_3                                                    []              // Last insruction in scope environment setup
+L34:    aload_3                                                     [E5]
+L35:    getfield Field environment_4 parent Lenvironment_1;         
+L38:    getfield Field environment_5 parent Lenvironment_4; 
+L41:    getfield Field environment_1 variable_0 Lfn_nR_n; 
+L44:    aload_3 
+L45:    getfield Field environment_4 parent Lenvironment_1; 
+L48:    getfield Field environment_5 parent Lenvironment_4; 
+L51:    getfield Field environment_1 variable_0 Lfn_nR_n; 
+L54:    aload_3 
+L55:    getfield Field environment_5 parent Lenvironment_4; 
+L58:    getfield Field environment_4 variable_3 I 
+L61:    invokeinterface InterfaceMethod fn_nR_n call (I)I 2 
+L66:    invokeinterface InterfaceMethod fn_nR_n call (I)I 2 
+L71:    aload_3 
+L72:    getfield Field environment_5 parent Lenvironment_4; 
+L75:    astore_3 
+L76:    ireturn 
+L77:    
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public function_0 
+.super java/lang/Object 
+.implements fn_nR_n 
+.field public frame Lenvironment_1; 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+
+.method public call : (I)I 
+    .code stack 256 locals 256 
+L0:     new environment_2 
+L3:     dup 
+L4:     invokespecial Method environment_2 <init> ()V 
+L7:     dup 
+L8:     aload_0 
+L9:     getfield Field function_0 frame Lenvironment_1; 
+L12:    putfield Field environment_2 parent Lenvironment_1; 
+L15:    dup 
+L16:    iload_1 
+L17:    putfield Field environment_2 variable_1 I 
+L20:    astore_3 
+L21:    new environment_3 
+L24:    dup 
+L25:    invokespecial Method environment_3 <init> ()V 
+L28:    dup 
+L29:    aload_3 
+L30:    putfield Field environment_3 parent Lenvironment_2; 
+L33:    astore_3 
+L34:    aload_3 
+L35:    getfield Field environment_3 parent Lenvironment_2; 
+L38:    getfield Field environment_2 variable_1 I 
+L41:    sipush 1 
+L44:    iadd 
+L45:    aload_3 
+L46:    getfield Field environment_3 parent Lenvironment_2; 
+L49:    astore_3 
+L50:    ireturn 
+L51:    
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public interface fn_nR_n 
+.super java/lang/Object 
+
+.method public abstract call : (I)I 
+.end method 
+.end class 
+.version 49 0 
+.class public environment_5 
+.super java/lang/Object 
+.field public parent Lenvironment_4; 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public environment_4 
+.super java/lang/Object 
+.field public parent Lenvironment_1; 
+.field public variable_3 I 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public environment_3 
+.super java/lang/Object 
+.field public parent Lenvironment_2; 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public environment_2 
+.super java/lang/Object 
+.field public parent Lenvironment_1; 
+.field public variable_1 I 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public environment_1 
+.super java/lang/Object 
+.field public parent Lenvironment_0; 
+.field public variable_2 Lfn_nR_n; 
+.field public variable_0 Lfn_nR_n; 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+.end class 
+.version 49 0 
+.class public environment_0 
+.super java/lang/Object 
+.field public parent Ljava/lang/Object; 
+
+.method public <init> : ()V 
+    .code stack 1 locals 1 
+L0:     aload_0 
+L1:     invokespecial Method java/lang/Object <init> ()V 
+L4:     return 
+L5:     
+    .end code 
+.end method 
+.end class 
