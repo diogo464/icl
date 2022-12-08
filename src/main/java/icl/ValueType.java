@@ -229,13 +229,13 @@ public class ValueType {
 
 	public Function getFunction() {
 		if (!this.isKind(Kind.Function))
-			throw new IllegalStateException("Called getFunction on ValueType that is not a reference");
+			throw new IllegalStateException("Called getFunction on ValueType that is not a function");
 		return this.function;
 	}
 
 	public Record getRecord() {
 		if (!this.isKind(Kind.Record))
-			throw new IllegalStateException("Called getRecord on ValueType that is not a reference");
+			throw new IllegalStateException("Called getRecord on ValueType that is not a record");
 		return this.record;
 	}
 

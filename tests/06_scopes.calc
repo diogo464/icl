@@ -1,9 +1,9 @@
 {
-    let x = 10;
+    let mut x = 10;
     {
-        let x = 20;
+        let mut x = 20;
         {
-            let x = 30;
+            let mut x = 30;
             println x;
             x := 40;
             println x;

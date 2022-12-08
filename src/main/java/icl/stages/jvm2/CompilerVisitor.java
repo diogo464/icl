@@ -473,9 +473,9 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptField(AstField field) {
-        var vtype = field.getAnnotation(TypeCheckStage.TYPE_KEY).getRecord();
-        var record_typename = Names.typename(vtype);
-        var field_descriptor = Names.descriptor(vtype.get(field.field));
+        var rtype = field.value.getAnnotation(TypeCheckStage.TYPE_KEY).getRecord();
+        var record_typename = Names.typename(rtype);
+        var field_descriptor = Names.descriptor(rtype.get(field.field));
 
         field.value.accept(this);
         this.method.visitFieldInsn(Opcodes.GETFIELD, record_typename, field.field, field_descriptor);
