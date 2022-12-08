@@ -1,4 +1,4 @@
-package icl.stages.jvm2;
+package icl.stages.jvm;
 
 public class EnvironmentLookup {
     public final Environment env;

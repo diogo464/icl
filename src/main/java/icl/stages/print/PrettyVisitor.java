@@ -48,12 +48,6 @@ class PrettyVisitor implements AstVisitor {
 			this.builder.append("\t");
 	}
 
-	private <T> void printAnnotation(T annotation) {
-		if (!this.print_annotations)
-			return;
-		this.print("[", annotation.toString(), "]");
-	}
-
 	@Override
 	public void acceptNum(AstNum node) {
 		print("(");

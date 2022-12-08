@@ -1,4 +1,4 @@
-package icl.stages.jvm2;
+package icl.stages.jvm;
 
 import java.util.HashMap;
 import java.util.Map;

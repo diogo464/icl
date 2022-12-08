@@ -8,7 +8,7 @@ import java.io.InputStream;
 import icl.pipeline.Pipeline;
 import icl.stages.interpretor.InterpretorStage;
 import icl.stages.interpretor.value.Value;
-import icl.stages.jvm2.CompilerStage;
+import icl.stages.jvm.CompilerStage;
 import icl.stages.parser.ParserStage;
 import icl.stages.print.NodePrinterStage;
 import icl.stages.print.PrettyPrinterStage;
@@ -45,8 +45,9 @@ public class App {
 	}
 
 	private static void commandTest() throws FileNotFoundException {
-		var source_stream = getFileStream("main.calc");
-		var node = Pipeline.begin(Pipeline.<InputStream>forward()).add(new ParserStage()).process(source_stream);
+		// var source_stream = getFileStream("main.calc");
+		// var node = Pipeline.begin(Pipeline.<InputStream>forward()).add(new
+		// ParserStage()).process(source_stream);
 	}
 
 	private static void commandCompile(String[] args) throws IOException {

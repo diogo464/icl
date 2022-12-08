@@ -1,101 +1,83 @@
 package icl.stages.jvm;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import icl.ValueType;
 
 public class Context {
-    private static enum NameKind {
+    public static enum Namespace {
         STACKFRAME,
         VARIABLE,
         RECORD,
         FUNCTION,
         FUNCTION_INTERFACE,
+        ENVIRONMENT,
     }
 
-    private final Map<NameKind, Integer> name_counters;
+    private final Set<Environment> compiled_environments;
+    private final Set<ValueType.Function> compiled_function_interfaces;
+    private final Set<ValueType.Record> compiled_records;
+    private final Set<ValueType.Reference> compiled_references;
     private final List<CompiledClass> compiled_classes;
-    private final Map<ValueType, String> typenames;
+    private final Map<Namespace, Integer> name_counters;
 
     public Context() {
-        this.name_counters = new HashMap<>();
+        this.compiled_environments = new HashSet<>();
+        this.compiled_function_interfaces = new HashSet<>();
+        this.compiled_records = new HashSet<>();
+        this.compiled_references = new HashSet<>();
         this.compiled_classes = new ArrayList<>();
-        this.typenames = new HashMap<>();
+        this.name_counters = new HashMap<>();
     }
 
-    public String generateStackFrameName() {
-        return this.generateName(NameKind.STACKFRAME);
+    public void emit(CompiledClass compiled_class) {
+        this.compiled_classes.add(compiled_class);
     }
 
-    public String generateFunctionInterfaceName() {
-        return this.generateName(NameKind.FUNCTION_INTERFACE);
-    }
-
-    private String generateName(NameKind kind) {
+    public String generate(Namespace kind) {
         var current = this.name_counters.computeIfAbsent(kind, k -> 0);
         this.name_counters.put(kind, current + 1);
         return kind.name().toLowerCase() + "_" + current;
     }
 
-    public void addCompiledClass(CompiledClass compiledClass) {
-        this.compiled_classes.add(compiledClass);
+    public void compile(Environment env) {
+        if (this.compiled_environments.contains(env))
+            throw new RuntimeException("Environment already compiled");
+        this.compiled_environments.add(env);
+        var compiled = Compiler.compile(env);
+        this.emit(compiled);
     }
 
-    public List<CompiledClass> getCompiledClasses() {
-        return Collections.unmodifiableList(this.compiled_classes);
+    public void compile(ValueType.Function fn) {
+        if (this.compiled_function_interfaces.contains(fn))
+            return;
+        this.compiled_function_interfaces.add(fn);
+        var compiled = Compiler.compile(fn);
+        this.emit(compiled);
     }
 
-    public String getFnCallDescriptor(ValueType.Function fn) {
-        var builder = new StringBuilder();
-        builder.append("(");
-        for (var arg : fn.args) {
-            builder.append(this.getValueTypeDescriptor(arg));
-        }
-        builder.append(")");
-        builder.append(this.getValueTypeDescriptor(fn.ret));
-        return builder.toString();
+    public void compile(ValueType.Record record) {
+        if (this.compiled_records.contains(record))
+            return;
+        this.compiled_records.add(record);
+        var compiled = Compiler.compile(record);
+        this.emit(compiled);
     }
 
-    public String getValueTypeTypename(ValueType type) {
-        if (this.typenames.containsKey(type))
-            return this.typenames.get(type);
-
-        switch (type.getKind()) {
-            case Alias, Boolean, Number, String, Void -> {
-                throw new IllegalArgumentException("Cannot get typename for type: " + type);
-            }
-            case Function -> {
-                var name = this.generateName(NameKind.FUNCTION);
-                this.typenames.put(type, name);
-                return name;
-            }
-            case Record -> {
-                var name = this.generateName(NameKind.RECORD);
-                this.typenames.put(type, name);
-                return name;
-            }
-            case Reference -> {
-                var name = this.generateName(NameKind.RECORD);
-                this.typenames.put(type, name);
-                return name;
-            }
-            default -> throw new UnsupportedOperationException("Unimplemented case: " + type.getKind());
-        }
+    public void compile(ValueType.Reference ref) {
+        if (this.compiled_references.contains(ref))
+            return;
+        this.compiled_references.add(ref);
+        var compiled = Compiler.compile(ref);
+        this.emit(compiled);
     }
 
-    public String getValueTypeDescriptor(ValueType type) {
-        return switch (type.getKind()) {
-            case Boolean -> "I";
-            case Function -> JvmUtils.descriptorFromTypename(this.getValueTypeTypename(type));
-            case Number -> "I";
-            case Record -> JvmUtils.descriptorFromTypename(this.getValueTypeTypename(type));
-            case Reference -> JvmUtils.descriptorFromTypename(this.getValueTypeTypename(type));
-            case String -> "Ljava/lang/String;";
-            case Void -> "Ljava/lang/Object;";
-            case Alias -> throw new UnsupportedOperationException("Unimplemented case: " + type.getKind());
-        };
+    public List<CompiledClass> classes() {
+        return List.copyOf(this.compiled_classes);
     }
 }

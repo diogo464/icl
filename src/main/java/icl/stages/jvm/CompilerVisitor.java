@@ -25,29 +25,18 @@ import icl.ast.AstTypeAlias;
 import icl.ast.AstUnaryOp;
 import icl.ast.AstVar;
 import icl.ast.AstVisitor;
-import icl.stages.jvm.stages.FunctionStage;
-import icl.stages.jvm.stages.RecordStage;
-import icl.stages.jvm.stages.StackFrameStage;
-import icl.stages.jvm.struct.StackFrame;
+import icl.stages.jvm.Context.Namespace;
 import icl.stages.typecheck.TypeCheckStage;
 
 public class CompilerVisitor implements AstVisitor {
+
     private static final int SL_INDEX = 3;
-
-    private final Context context;
     private final MethodVisitor method;
-    private StackFrame current_frame;
+    private Environment env;
 
-    public CompilerVisitor(Context context, MethodVisitor method) {
-        this.context = context;
+    public CompilerVisitor(Environment env, MethodVisitor method) {
+        this.env = env;
         this.method = method;
-        this.current_frame = null;
-    }
-
-    public CompilerVisitor(Context context, MethodVisitor method, StackFrame frame) {
-        this.context = context;
-        this.method = method;
-        this.current_frame = frame;
     }
 
     /**
@@ -56,38 +45,34 @@ public class CompilerVisitor implements AstVisitor {
      * @param frame The starting frame
      * @param depth The depth of the frame to push starting from the given frame
      */
-    private void pushStackFrame(StackFrame frame, int depth) {
-        if (depth == 0) {
-            this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
-            return;
+    private void pushStackFrame(Environment frame, int depth) {
+        var current = frame;
+        this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
+        for (var i = 0; i < depth; i++) {
+            var typename = current.getTypename();
+            var parent_descriptor = current.getParent().getDescriptor();
+            this.method.visitFieldInsn(Opcodes.GETFIELD, typename, "parent", parent_descriptor);
+            current = current.getParent();
         }
-        if (frame.parent.isEmpty())
-            throw new RuntimeException("Stack frame has no parent");
-        this.pushStackFrame(frame.parent.get(), depth - 1);
-        this.method.visitFieldInsn(Opcodes.GETFIELD, frame.typename, "parent", frame.parent.get().descriptor);
     }
 
-    private void pushStackFrameVar(StackFrame frame, String name) {
-        var lookup = frame.lookup(name).get();
-        this.pushStackFrame(frame, lookup.depth);
+    private void pushVariable(String name) {
+        var lookup = this.env.lookup(name).get();
+        this.pushStackFrame(this.env, lookup.depth);
         this.method.visitFieldInsn(
                 Opcodes.GETFIELD,
-                lookup.frame.typename,
+                lookup.env.getTypename(),
                 lookup.field.field,
                 lookup.field.descriptor);
     }
 
     @Override
     public void acceptNum(AstNum node) {
-        // Push number to stack
-
         this.method.visitIntInsn(Opcodes.SIPUSH, node.value);
     }
 
     @Override
     public void acceptBool(AstBool node) {
-        // Push number to stack
-
         var value = node.value;
         var ivalue = value ? 1 : 0;
         this.method.visitIntInsn(Opcodes.SIPUSH, ivalue);
@@ -95,17 +80,11 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptStr(AstStr node) {
-        // Push string to stack
-
         this.method.visitLdcInsn(node.value);
     }
 
     @Override
     public void acceptBinOp(AstBinOp node) {
-        // Push left to stack
-        // Push right to stack
-        // Push operator instruction
-
         var operand_type = node.left.getAnnotation(TypeCheckStage.TYPE_KEY);
         node.left.accept(this);
         node.right.accept(this);
@@ -227,9 +206,6 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptUnaryOp(AstUnaryOp node) {
-        // Push expr to stack
-        // Push operator instruction
-
         var operand_type = node.expr.getAnnotation(TypeCheckStage.TYPE_KEY);
         node.expr.accept(this);
 
@@ -256,8 +232,9 @@ public class CompilerVisitor implements AstVisitor {
             case Reference -> {
                 switch (node.kind) {
                     case DEREF -> {
-                        var reference_typename = this.context.getValueTypeTypename(operand_type);
-                        var target_descriptor = this.context.getValueTypeDescriptor(operand_type.getReference().target);
+                        var reference_typename = Names.typename(operand_type);
+                        var target_descriptor = Names.descriptor(operand_type.getReference().target);
+                        this.env.getContext().compile(operand_type.getReference());
                         this.method.visitFieldInsn(Opcodes.GETFIELD, reference_typename, "value", target_descriptor);
                     }
                     default -> throw new IllegalStateException();
@@ -269,108 +246,78 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptDecl(AstDecl node) {
-        // Obtain StackFrame from annotation
-        // Obtain StackFrameField using node.name
-        // Push current stack frame to stack. Declarations are always made to the
-        // current stack frame.
-        // Push node.value to stack
-        // Push PUTFIELD instruction
+        var vtype = node.value.getAnnotation(TypeCheckStage.TYPE_KEY);
+        var field = this.env.define(node.name, vtype);
 
-        var stackframe = this.current_frame;
-        var lookup = stackframe.lookup(node.name).get();
-        assert lookup.depth == 0;
-
-        this.pushStackFrame(stackframe, lookup.depth);
+        this.pushStackFrame(this.env, 0);
         node.value.accept(this);
         this.method.visitFieldInsn(
                 Opcodes.PUTFIELD,
-                stackframe.typename,
-                lookup.field.field,
-                lookup.field.descriptor);
+                this.env.getTypename(),
+                field.field,
+                field.descriptor);
     }
 
     @Override
     public void acceptScope(AstScope node) {
-        // Obtain the scope's StackFrame from annotation
-        // Push NEW instruction to create new stack frame
-        // Push DUP instruction to duplicate the stack frame
-        // Push INVOKESPECIAL instruction to call the stack frame's constructor
-        // Push DUP instruction to duplicate the stack frame
-        // Push ALOAD to push the current stackframe to the stack
-        // Push PUTFIELD instruction to set the new stack frame's parent
-        // Push ASTORE to store the new stack frame
-        // Compile statements and the expression
-        // Push ALOAD to push the current stackframe to the stack
-        // Push GETFIELD to get the parent stack frame
-        // Push ASTORE to store the old stack frame
+        var context = this.env.getContext();
+        var new_env = this.env.begin();
+        var parent_descriptor = this.env.getDescriptor();
 
-        var stackframe = node.getAnnotation(StackFrameStage.STACK_FRAME_KEY);
-        this.current_frame = stackframe;
-        Compiler.compileBasicNew(this.method, stackframe.typename);
+        Compiler.compileBasicNew(this.method, new_env.getTypename());
         this.method.visitInsn(Opcodes.DUP);
-        if (stackframe.parent.isEmpty())
-            this.method.visitInsn(Opcodes.ACONST_NULL);
-        else
-            this.pushStackFrame(stackframe.parent.get(), 0);
-        var parentDescriptor = switch (stackframe.parent.isPresent() ? 1 : 0) {
-            case 1 -> stackframe.parent.get().descriptor;
-            default -> "Ljava/lang/Object;";
-        };
+        this.pushStackFrame(this.env, 0);
+
         this.method.visitFieldInsn(
                 Opcodes.PUTFIELD,
-                stackframe.typename,
+                new_env.getTypename(),
                 "parent",
-                parentDescriptor);
+                parent_descriptor);
         this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
 
+        this.env = new_env;
         for (var stmt : node.stmts)
             stmt.accept(this);
         node.expr.accept(this);
 
+        context.compile(this.env);
+        this.env = this.env.end();
+
         this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
         this.method.visitFieldInsn(
                 Opcodes.GETFIELD,
-                stackframe.typename,
+                new_env.getTypename(),
                 "parent",
-                parentDescriptor);
+                parent_descriptor);
         this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
-        this.current_frame = stackframe.parent.orElse(null);
     }
 
     @Override
     public void acceptEmptyNode(AstEmptyNode node) {
-        // Do nothing
     }
 
     @Override
     public void acceptVar(AstVar node) {
-        // Obtain StackFrame from annotation
-        // Obtain StackFrameField and depth using node.name
-        // Load the stack frame at depth
-        // Push GETFIELD instruction
-
-        var stackframe = this.current_frame;
-        this.pushStackFrameVar(stackframe, node.name);
+        this.pushVariable(node.name);
     }
 
     @Override
     public void acceptCall(AstCall call) {
-        // Push arguments to stack
-        // Push function to stack
-        // Push INVOKEVIRTUAL instruction
+        var ftype = call.function.getAnnotation(TypeCheckStage.TYPE_KEY).getFunction();
+        var interface_typename = Names.typename(ftype);
+        var call_descriptor = Names.callDescriptor(ftype);
 
-        var fn_type = call.function.getAnnotation(TypeCheckStage.TYPE_KEY).getFunction();
-        var call_descriptor = this.context.getFnCallDescriptor(fn_type);
+        call.function.accept(this);
+
         for (var arg : call.arguments)
             arg.accept(this);
 
-        call.function.accept(this);
         this.method.visitMethodInsn(
-                Opcodes.INVOKEVIRTUAL,
-                "java/lang/Object",
-                "invoke",
+                Opcodes.INVOKEINTERFACE,
+                interface_typename,
+                "call",
                 call_descriptor,
-                false);
+                true);
     }
 
     @Override
@@ -415,14 +362,7 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptAssign(AstAssign assign) {
-        // Obtain the StackFrame from annotation
-        // Obtain the StackFrameField and depth using assign.name
-        // Load the stack frame at depth
-        // Push assign.value to stack
-        // Push PUTFIELD instruction
-
-        var stackframe = this.current_frame;
-        var lookup = stackframe.lookup(assign.name).get();
+        var lookup = this.env.lookup(assign.name).get();
         var ltype = lookup.field.type;
         var rtype = assign.value.getAnnotation(TypeCheckStage.TYPE_KEY);
 
@@ -431,7 +371,7 @@ public class CompilerVisitor implements AstVisitor {
             this.method.visitInsn(Opcodes.ACONST_NULL);
             this.method.visitFieldInsn(
                     Opcodes.PUTFIELD,
-                    lookup.frame.typename,
+                    lookup.env.getTypename(),
                     lookup.field.field,
                     lookup.field.descriptor);
             return;
@@ -439,10 +379,10 @@ public class CompilerVisitor implements AstVisitor {
 
         // Special case lvalue reference
         if (ltype.isKind(ValueType.Kind.Reference)) {
-            var reference_typename = this.context.getValueTypeTypename(ltype);
-            var target_descriptor = this.context.getValueTypeDescriptor(rtype);
+            var reference_typename = Names.typename(ltype);
+            var target_descriptor = Names.descriptor(rtype);
 
-            this.pushStackFrameVar(stackframe, assign.name);
+            this.pushVariable(assign.name);
             assign.value.accept(this);
             this.method.visitFieldInsn(
                     Opcodes.PUTFIELD,
@@ -452,11 +392,11 @@ public class CompilerVisitor implements AstVisitor {
             return;
         }
 
-        this.pushStackFrame(stackframe, lookup.depth);
+        this.pushStackFrame(this.env, lookup.depth);
         assign.value.accept(this);
         this.method.visitFieldInsn(
                 Opcodes.PUTFIELD,
-                lookup.frame.typename,
+                lookup.env.getTypename(),
                 lookup.field.field,
                 lookup.field.descriptor);
     }
@@ -489,16 +429,9 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptNew(AstNew anew) {
-        // Push NEW instruction to create a reference to anew.value
-        // Push DUP instruction to duplicate the reference
-        // Push INVOKESPECIAL instruction to call anew.value's constructor
-        // Push DUP instruction to duplicate the reference
-        // Push anew.value to stack
-        // Push PUTFIELD instruction to set the reference value
-
         var value_type = anew.value.getAnnotation(TypeCheckStage.TYPE_KEY);
-        var value_descriptor = this.context.getValueTypeDescriptor(value_type);
-        var reference_typename = this.context.getValueTypeTypename(ValueType.createReference(value_type));
+        var value_descriptor = Names.descriptor(value_type);
+        var reference_typename = Names.typename(ValueType.createReference(value_type));
 
         Compiler.compileBasicNew(this.method, reference_typename);
         this.method.visitInsn(Opcodes.DUP);
@@ -508,62 +441,41 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptFn(AstFn fn) {
-        // Obtain the function's ValueType from annotation
-        // Obtain the Function from fn's annotation
-        // Push NEW instruction to create the function's class
-        // Push DUP instruction to duplicate the function's class
-        // Push INVOKESPECIAL instruction to call the constructor
-        // Push DUP instruction to duplicate the function's class
-        // Push ALOAD to push the current stackframe to the stack
-        // Push PUTFIELD instruction to set the function's environment
-        // Assert that the StackFrame associated in the function's annotation
-        // is the same as Function.environment
+        var context = this.env.getContext();
+        var function_type = fn.getAnnotation(TypeCheckStage.TYPE_KEY).getFunction();
+        var function_typename = context.generate(Namespace.FUNCTION);
+        var compiled = Compiler.compile(this.env, function_typename, fn);
+        context.emit(compiled);
+        context.compile(function_type);
 
-        var stackframe = this.current_frame;
-        var function = fn.getAnnotation(FunctionStage.FUNCTION_KEY);
-        // assert function.environment == stackframe;
-
-        this.method.visitTypeInsn(Opcodes.NEW, function.typename);
+        Compiler.compileBasicNew(this.method, function_typename);
         this.method.visitInsn(Opcodes.DUP);
-        this.method.visitMethodInsn(Opcodes.INVOKESPECIAL, function.typename,
-                "<init>", "()V", false);
-        this.method.visitInsn(Opcodes.DUP);
-        this.method.visitVarInsn(Opcodes.ALOAD, 0);
-        this.method.visitFieldInsn(Opcodes.PUTFIELD, function.typename,
-                "frame", stackframe.descriptor);
-
+        this.pushStackFrame(this.env, 0);
+        this.method.visitFieldInsn(Opcodes.PUTFIELD, function_typename, "frame", this.env.getDescriptor());
     }
 
     @Override
     public void acceptRecord(AstRecord record) {
-        // Obtain the Record from record's annotation
-        // Push NEW instruction to create the record's class
-        // Push DUP instruction to duplicate the record's class
-        // Push INVOKESPECIAL instruction to call the constructor
-        // For each field in record.fields
-        // Push DUP instruction to duplicate the record's class
-        // Push field to stack
-        // Push PUTFIELD instruction to set the record's field
+        var context = this.env.getContext();
+        var vtype = record.getAnnotation(TypeCheckStage.TYPE_KEY).getRecord();
+        var record_typename = Names.typename(vtype);
 
-        var rec = record.getAnnotation(RecordStage.RECORD_KEY);
-        Compiler.compileBasicNew(this.method, rec.typename);
+        context.compile(vtype);
+        Compiler.compileBasicNew(this.method, record_typename);
 
-        for (var field : rec.type.fields()) {
+        for (var field : vtype.fields()) {
             this.method.visitInsn(Opcodes.DUP);
             record.fields.get(field.getKey()).accept(this);
-            this.method.visitFieldInsn(Opcodes.PUTFIELD, rec.typename,
-                    field.getKey(), this.context.getValueTypeDescriptor(field.getValue()));
+            this.method.visitFieldInsn(Opcodes.PUTFIELD, record_typename, field.getKey(),
+                    Names.descriptor(field.getValue()));
         }
     }
 
     @Override
     public void acceptField(AstField field) {
-        // Push field.value to stack
-        // Push GETFIELD instruction using field.field
-
-        var record_vtype = field.value.getAnnotation(TypeCheckStage.TYPE_KEY);
-        var record_typename = this.context.getValueTypeTypename(record_vtype);
-        var field_descriptor = this.context.getValueTypeDescriptor(record_vtype.getRecord().get(field.field));
+        var rtype = field.value.getAnnotation(TypeCheckStage.TYPE_KEY).getRecord();
+        var record_typename = Names.typename(rtype);
+        var field_descriptor = Names.descriptor(rtype.get(field.field));
 
         field.value.accept(this);
         this.method.visitFieldInsn(Opcodes.GETFIELD, record_typename, field.field, field_descriptor);
