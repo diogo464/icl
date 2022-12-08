@@ -48,7 +48,7 @@ public class Names {
     public static String descriptor(ValueType vtype) {
         return switch (vtype.getKind()) {
             case Boolean -> "I";
-            case Number -> "I";
+            case Number -> "F";
             case String -> "Ljava/lang/String;";
             default -> typenameToDescriptor(typename(vtype));
         };

@@ -119,7 +119,8 @@ public class Compiler {
 
             // Load the argument to the stack
             switch (arg_type.getKind()) {
-                case Boolean, Number -> method.visitVarInsn(Opcodes.ILOAD, arg_index);
+                case Boolean -> method.visitVarInsn(Opcodes.ILOAD, arg_index);
+                case Number -> method.visitVarInsn(Opcodes.FLOAD, arg_index);
                 case Function, Record, Reference, String -> method.visitVarInsn(Opcodes.ALOAD, arg_index);
                 default -> throw new IllegalStateException();
             }
@@ -140,7 +141,8 @@ public class Compiler {
 
         var return_type = ftype.ret;
         switch (return_type.getKind()) {
-            case Boolean, Number -> method.visitInsn(Opcodes.IRETURN);
+            case Boolean -> method.visitInsn(Opcodes.IRETURN);
+            case Number -> method.visitInsn(Opcodes.FRETURN);
             case Function, Record, Reference, String -> method.visitInsn(Opcodes.ARETURN);
             case Void -> method.visitInsn(Opcodes.RETURN);
             default -> throw new IllegalStateException();

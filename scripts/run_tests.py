@@ -42,7 +42,7 @@ for (sourecode_file, expected) in TESTS:
             "-q",
             "exec:java",
             "-Dexec.mainClass=App",
-            f"-Dexec.args=crun {sourecode_file}",
+            f"-Dexec.args=run {sourecode_file}",
         ],
         capture_output=True,
         env={"MAVEN_OPTS": "-ea"},

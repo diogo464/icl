@@ -3,14 +3,14 @@ package icl.stages.interpretor.value;
 import icl.ValueType;
 
 public class NumberValue extends Value {
-    public short value;
+    public float value;
 
-    NumberValue(ValueType type, short value) {
+    NumberValue(ValueType type, float value) {
         super(type);
         this.value = value;
     }
 
-    public short getValue() {
+    public float getValue() {
         return this.value;
     }
 

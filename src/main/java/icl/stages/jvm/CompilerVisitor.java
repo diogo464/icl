@@ -68,7 +68,7 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptNum(AstNum node) {
-        this.method.visitIntInsn(Opcodes.SIPUSH, node.value);
+        this.method.visitLdcInsn(node.value);
     }
 
     @Override
@@ -114,21 +114,22 @@ public class CompilerVisitor implements AstVisitor {
             case Number -> {
                 switch (node.kind) {
                     case ADD -> {
-                        this.method.visitInsn(Opcodes.IADD);
+                        this.method.visitInsn(Opcodes.FADD);
                     }
                     case SUB -> {
-                        this.method.visitInsn(Opcodes.ISUB);
+                        this.method.visitInsn(Opcodes.FSUB);
                     }
                     case MUL -> {
-                        this.method.visitInsn(Opcodes.IMUL);
+                        this.method.visitInsn(Opcodes.FMUL);
                     }
                     case DIV -> {
-                        this.method.visitInsn(Opcodes.IDIV);
+                        this.method.visitInsn(Opcodes.FDIV);
                     }
                     case CMP -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitJumpInsn(Opcodes.IF_ICMPEQ, one);
+                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitJumpInsn(Opcodes.IFEQ, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
                         this.method.visitLabel(one);
@@ -138,7 +139,8 @@ public class CompilerVisitor implements AstVisitor {
                     case GT -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitJumpInsn(Opcodes.IF_ICMPGT, one);
+                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitJumpInsn(Opcodes.IFGT, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
                         this.method.visitLabel(one);
@@ -148,7 +150,8 @@ public class CompilerVisitor implements AstVisitor {
                     case GTE -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitJumpInsn(Opcodes.IF_ICMPGE, one);
+                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitJumpInsn(Opcodes.IFGE, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
                         this.method.visitLabel(one);
@@ -158,7 +161,8 @@ public class CompilerVisitor implements AstVisitor {
                     case LT -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitJumpInsn(Opcodes.IF_ICMPLT, one);
+                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitJumpInsn(Opcodes.IFLT, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
                         this.method.visitLabel(one);
@@ -168,7 +172,8 @@ public class CompilerVisitor implements AstVisitor {
                     case LTE -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitJumpInsn(Opcodes.IF_ICMPLE, one);
+                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitJumpInsn(Opcodes.IFLE, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
                         this.method.visitLabel(one);
@@ -222,7 +227,7 @@ public class CompilerVisitor implements AstVisitor {
             case Number -> {
                 switch (node.kind) {
                     case NEG -> {
-                        this.method.visitInsn(Opcodes.INEG);
+                        this.method.visitInsn(Opcodes.FNEG);
                     }
                     case POS -> {
                     }
@@ -410,7 +415,7 @@ public class CompilerVisitor implements AstVisitor {
 
         if (expr_type.isKind(ValueType.Kind.Number)) {
             this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
-                    "valueOf", "(I)Ljava/lang/String;",
+                    "valueOf", "(F)Ljava/lang/String;",
                     false);
         } else if (expr_type.isKind(ValueType.Kind.Boolean)) {
             this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
