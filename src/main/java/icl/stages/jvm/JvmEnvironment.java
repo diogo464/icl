@@ -3,7 +3,6 @@ package icl.stages.jvm;
 import java.util.ArrayList;
 import java.util.List;
 
-import icl.Environment;
 import icl.ValueType;
 
 class JvmEnvironment {
@@ -24,14 +23,14 @@ class JvmEnvironment {
 
 	private final NameGenerator name_generator;
 	private final List<StackFrameOld> stackframes;
-	private Environment<Variable> environment;
+	private icl.Environment<Variable> environment;
 	private StackFrameOld current_frame;
 	private int current_depth;
 
 	public JvmEnvironment(NameGenerator name_generator) {
 		this.name_generator = name_generator;
 		this.stackframes = new ArrayList<>();
-		this.environment = new Environment<>();
+		this.environment = new icl.Environment<>();
 		this.current_frame = null;
 		this.current_depth = 0;
 	}

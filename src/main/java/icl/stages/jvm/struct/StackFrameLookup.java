@@ -1,4 +1,4 @@
-package icl.stages.jvm.stackframe;
+package icl.stages.jvm.struct;
 
 public class StackFrameLookup {
     public final StackFrame frame;

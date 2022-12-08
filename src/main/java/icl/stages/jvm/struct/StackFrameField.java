@@ -1,4 +1,4 @@
-package icl.stages.jvm.stackframe;
+package icl.stages.jvm.struct;
 
 import icl.ValueType;
 
@@ -18,7 +18,7 @@ public class StackFrameField {
     // This is the JVM type descriptor used in the generated class.
     public final String descriptor;
 
-    StackFrameField(String name, ValueType type, String field, String descriptor) {
+    public StackFrameField(String name, ValueType type, String field, String descriptor) {
         this.name = name;
         this.type = type;
         this.field = field;

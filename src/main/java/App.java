@@ -4,14 +4,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.nio.file.Files;
 
 import icl.pipeline.Pipeline;
 import icl.stages.interpretor.InterpretorStage;
 import icl.stages.interpretor.value.Value;
-import icl.stages.jvm.Compiler;
-import icl.stages.jvm.CompilerStage;
+import icl.stages.jvm2.CompilerStage;
 import icl.stages.parser.ParserStage;
 import icl.stages.print.NodePrinterStage;
 import icl.stages.print.PrettyPrinterStage;
@@ -50,7 +47,6 @@ public class App {
 	private static void commandTest() throws FileNotFoundException {
 		var source_stream = getFileStream("main.calc");
 		var node = Pipeline.begin(Pipeline.<InputStream>forward()).add(new ParserStage()).process(source_stream);
-		Compiler.printStackFrames(node);
 	}
 
 	private static void commandCompile(String[] args) throws IOException {

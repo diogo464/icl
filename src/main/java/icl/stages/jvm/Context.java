@@ -1,61 +1,101 @@
 package icl.stages.jvm;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import icl.ValueType;
-import icl.stages.jvm.reference.Reference;
-import icl.stages.jvm.stackframe.StackFrame;
 
 public class Context {
-    private final NameGenerator nameGenerator;
-    private final Set<StackFrame> stackframes;
-    private final Map<ValueType, Reference> references;
-
-    public Context(NameGenerator nameGenerator) {
-        this.nameGenerator = nameGenerator;
-        this.stackframes = new HashSet<>();
-        this.references = new HashMap<>();
+    private static enum NameKind {
+        STACKFRAME,
+        VARIABLE,
+        RECORD,
+        FUNCTION,
+        FUNCTION_INTERFACE,
     }
 
-    public StackFrame registerStackFrame(StackFrame frame) {
-        this.stackframes.add(frame);
-        return frame;
+    private final Map<NameKind, Integer> name_counters;
+    private final List<CompiledClass> compiled_classes;
+    private final Map<ValueType, String> typenames;
+
+    public Context() {
+        this.name_counters = new HashMap<>();
+        this.compiled_classes = new ArrayList<>();
+        this.typenames = new HashMap<>();
     }
 
-    public List<StackFrame> getStackFrames() {
-        return List.copyOf(this.stackframes);
+    public String generateStackFrameName() {
+        return this.generateName(NameKind.STACKFRAME);
     }
 
-    public Reference registerReference(ValueType target) {
-        var current = this.references.get(target);
-        if (current != null)
-            return current;
-
-        var reference = new Reference(this.nameGenerator.generateReferenceName(), target);
-        this.references.put(target, reference);
-        return reference;
+    public String generateFunctionInterfaceName() {
+        return this.generateName(NameKind.FUNCTION_INTERFACE);
     }
 
-    public List<Reference> getReferences() {
-        return List.copyOf(this.references.values());
+    private String generateName(NameKind kind) {
+        var current = this.name_counters.computeIfAbsent(kind, k -> 0);
+        this.name_counters.put(kind, current + 1);
+        return kind.name().toLowerCase() + "_" + current;
     }
 
-    public String descriptorFromValueType(ValueType type) {
+    public void addCompiledClass(CompiledClass compiledClass) {
+        this.compiled_classes.add(compiledClass);
+    }
+
+    public List<CompiledClass> getCompiledClasses() {
+        return Collections.unmodifiableList(this.compiled_classes);
+    }
+
+    public String getFnCallDescriptor(ValueType.Function fn) {
+        var builder = new StringBuilder();
+        builder.append("(");
+        for (var arg : fn.args) {
+            builder.append(this.getValueTypeDescriptor(arg));
+        }
+        builder.append(")");
+        builder.append(this.getValueTypeDescriptor(fn.ret));
+        return builder.toString();
+    }
+
+    public String getValueTypeTypename(ValueType type) {
+        if (this.typenames.containsKey(type))
+            return this.typenames.get(type);
+
+        switch (type.getKind()) {
+            case Alias, Boolean, Number, String, Void -> {
+                throw new IllegalArgumentException("Cannot get typename for type: " + type);
+            }
+            case Function -> {
+                var name = this.generateName(NameKind.FUNCTION);
+                this.typenames.put(type, name);
+                return name;
+            }
+            case Record -> {
+                var name = this.generateName(NameKind.RECORD);
+                this.typenames.put(type, name);
+                return name;
+            }
+            case Reference -> {
+                var name = this.generateName(NameKind.RECORD);
+                this.typenames.put(type, name);
+                return name;
+            }
+            default -> throw new UnsupportedOperationException("Unimplemented case: " + type.getKind());
+        }
+    }
+
+    public String getValueTypeDescriptor(ValueType type) {
         return switch (type.getKind()) {
             case Boolean -> "I";
-            // TODO: Function descriptors
-            case Function -> throw new UnsupportedOperationException();
+            case Function -> JvmUtils.descriptorFromTypename(this.getValueTypeTypename(type));
             case Number -> "I";
-            // TODO: Record descriptors
-            case Record -> throw new UnsupportedOperationException();
-            case Reference -> this.registerReference(type.getReference().target).descriptor;
+            case Record -> JvmUtils.descriptorFromTypename(this.getValueTypeTypename(type));
+            case Reference -> JvmUtils.descriptorFromTypename(this.getValueTypeTypename(type));
             case String -> "Ljava/lang/String;";
             case Void -> "Ljava/lang/Object;";
-            default -> throw new IllegalArgumentException("Unknown type kind: " + type.getKind());
+            case Alias -> throw new UnsupportedOperationException("Unimplemented case: " + type.getKind());
         };
     }
 }

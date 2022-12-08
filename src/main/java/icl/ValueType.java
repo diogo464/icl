@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Map.Entry;
 
 public class ValueType {
 	public static enum Kind {
@@ -129,6 +130,10 @@ public class ValueType {
 
 		public boolean contains(String name) {
 			return this.fields.containsKey(name);
+		}
+
+		public Iterable<Entry<String, ValueType>> fields() {
+			return this.fields.entrySet();
 		}
 
 		@Override

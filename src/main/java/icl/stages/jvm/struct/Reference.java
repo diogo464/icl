@@ -1,4 +1,4 @@
-package icl.stages.jvm.reference;
+package icl.stages.jvm.struct;
 
 import icl.ValueType;
 import icl.stages.jvm.JvmUtils;
@@ -15,7 +15,7 @@ public class Reference {
 
     public Reference(String typename, ValueType target) {
         this.typename = typename;
-        this.descriptor = JvmUtils.typedescriptorFromTypename(typename);
+        this.descriptor = JvmUtils.descriptorFromTypename(typename);
         this.target = target;
     }
 

@@ -41,8 +41,9 @@ import icl.pipeline.PipelineStage;
  * 
  * ----------------
  * 
- * Defined annotations:
- *  - TYPE_KEY: The type of the node, all custom types have been resolved to builtin types.
+ * Annotations:
+ *  AstNode:
+ *      - TYPE_KEY: The type of the node, all custom types have been resolved to builtin types.
  */
 public class TypeCheckStage implements PipelineStage<AstNode, AstNode> {
     public static final AnnotationKey<ValueType> TYPE_KEY = new AnnotationKey<>("type");

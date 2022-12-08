@@ -1,7 +1,7 @@
 package icl.stages.jvm;
 
 public class JvmUtils {
-    public static String typedescriptorFromTypename(String typename) {
+    public static String descriptorFromTypename(String typename) {
         return "L" + typename + ";";
     }
 }

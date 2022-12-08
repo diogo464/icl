@@ -3,17 +3,25 @@ package icl.stages.jvm;
 import icl.ast.AstNode;
 import icl.pipeline.Pipeline;
 import icl.pipeline.PipelineStage;
-import icl.stages.jvm.stackframe.StackFrameStage;
+import icl.stages.jvm.stages.FunctionStage;
+import icl.stages.jvm.stages.RecordStage;
+import icl.stages.jvm.stages.StackFrameStage;
 
 public class CompilerStage implements PipelineStage<AstNode, CompilerOutput> {
 
     @Override
     public CompilerOutput process(AstNode input) {
-        var nameGenerator = new NameGenerator();
-        var context = new Context(nameGenerator);
+        var context = new Context();
+
         return Pipeline
-                .begin(new StackFrameStage(nameGenerator, context))
-                .add(Pipeline.function(node -> Compiler.compile(context, node)))
+                .begin(Pipeline.<AstNode>forward())
+                .add(new StackFrameStage(context))
+                .add(new RecordStage(context))
+                .add(new FunctionStage(context))
+                .add(Pipeline.function(main -> {
+                    context.addCompiledClass(Compiler.main(context, main));
+                    return new CompilerOutput(context.getCompiledClasses());
+                }))
                 .process(input);
     }
 
