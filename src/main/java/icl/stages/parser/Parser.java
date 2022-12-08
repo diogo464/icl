@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import icl.Builtin;
 import icl.ValueType;
 import icl.ast.*;
 import icl.stages.parser.exception.ParserException;
@@ -72,7 +73,7 @@ public class Parser {
 	}
 
 	static AstNum astNum(Span span, String string) {
-		var value = Short.parseShort(string);
+		var value = Double.parseDouble(string);
 		var node = new AstNum(value);
 		node.annotate(SPAN_KEY, span);
 		return node;
@@ -157,6 +158,25 @@ public class Parser {
 
 	static AstNode astTypeAlias(Span span, String name, ValueType type) {
 		var node = new AstTypeAlias(name, type);
+		node.annotate(SPAN_KEY, span);
+		return node;
+	}
+
+	static AstBuiltin astBuiltin(Span span, String name, List<AstNode> args) {
+		var builtin = switch (name) {
+			case "sin" -> Builtin.SIN;
+			case "cos" -> Builtin.COS;
+			case "tan" -> Builtin.TAN;
+			case "sqrt" -> Builtin.SQRT;
+			case "abs" -> Builtin.ABS;
+			case "pow" -> Builtin.POW;
+			case "max" -> Builtin.MAX;
+			case "min" -> Builtin.MIN;
+			case "pi" -> Builtin.PI;
+			default -> throw new ParserException("Unknown builtin: " + name + " at " + span);
+		};
+
+		var node = new AstBuiltin(builtin, args);
 		node.annotate(SPAN_KEY, span);
 		return node;
 	}

@@ -38,4 +38,6 @@ public interface AstVisitor {
 	void acceptField(AstField field);
 
 	void acceptTypeAlias(AstTypeAlias typeAlias);
+
+	void acceptBuiltin(AstBuiltin builtin);
 }

@@ -6,6 +6,7 @@ import icl.Environment;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
 import icl.ast.AstBool;
+import icl.ast.AstBuiltin;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstScope;
@@ -249,6 +250,53 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptTypeAlias(AstTypeAlias typeAlias) {
 		this.value = Value.createVoid();
+	}
+
+	@Override
+	public void acceptBuiltin(AstBuiltin builtin) {
+		var args = builtin.args.stream().map(arg -> InterpretorStage.interpret(this.environment, arg)).toList();
+
+		var result = switch (builtin.builtin) {
+			case ABS -> {
+				var x = args.get(0).getNumber().getValue();
+				yield Value.createNumber(Math.abs(x));
+			}
+			case COS -> {
+				var x = args.get(0).getNumber().getValue();
+				yield Value.createNumber(Math.cos(x));
+			}
+			case MAX -> {
+				var x = args.get(0).getNumber().getValue();
+				var y = args.get(1).getNumber().getValue();
+				yield Value.createNumber(Math.max(x, y));
+			}
+			case MIN -> {
+				var x = args.get(0).getNumber().getValue();
+				var y = args.get(1).getNumber().getValue();
+				yield Value.createNumber(Math.min(x, y));
+			}
+			case PI -> {
+				yield Value.createNumber(Math.PI);
+			}
+			case POW -> {
+				var x = args.get(0).getNumber().getValue();
+				var y = args.get(1).getNumber().getValue();
+				yield Value.createNumber(Math.pow(x, y));
+			}
+			case SIN -> {
+				var x = args.get(0).getNumber().getValue();
+				yield Value.createNumber(Math.sin(x));
+			}
+			case SQRT -> {
+				var x = args.get(0).getNumber().getValue();
+				yield Value.createNumber(Math.sqrt(x));
+			}
+			case TAN -> {
+				var x = args.get(0).getNumber().getValue();
+				yield Value.createNumber(Math.tan(x));
+			}
+		};
+		this.value = result;
 	}
 
 }

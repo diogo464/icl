@@ -103,4 +103,10 @@ public class BaseAstVisitor implements AstVisitor {
     public void acceptTypeAlias(AstTypeAlias typeAlias) {
     }
 
+    @Override
+    public void acceptBuiltin(AstBuiltin builtin) {
+        for (var arg : builtin.args)
+            arg.accept(this);
+    }
+
 }

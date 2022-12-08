@@ -3,6 +3,7 @@ package icl.stages.print;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
 import icl.ast.AstBool;
+import icl.ast.AstBuiltin;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
@@ -146,5 +147,12 @@ class NodeVisitor implements AstVisitor {
         for (var string : strings)
             System.out.print(string);
         System.out.println();
+    }
+
+    @Override
+    public void acceptBuiltin(AstBuiltin builtin) {
+        for (var arg : builtin.args)
+            arg.accept(this);
+        this.print("AcceptBuiltin: ", builtin.builtin.toString());
     }
 }

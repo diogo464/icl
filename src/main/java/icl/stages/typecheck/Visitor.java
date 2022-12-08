@@ -6,6 +6,7 @@ import icl.ValueType;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
 import icl.ast.AstBool;
+import icl.ast.AstBuiltin;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
@@ -307,4 +308,102 @@ class Visitor implements AstVisitor {
 		}
 		return type;
 	}
+
+	@Override
+	public void acceptBuiltin(AstBuiltin builtin) {
+		builtin.args.forEach(n -> n.accept(this));
+		var argc = builtin.args.size();
+		var types = builtin.args.stream().map(n -> n.getAnnotation(TypeCheckStage.TYPE_KEY));
+
+		var type = switch (builtin.builtin) {
+			case ABS -> {
+				if (argc != 1)
+					throw new TypeCheckException("ABS takes exactly 1 argument", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("ABS takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+			case COS -> {
+				if (argc != 1)
+					throw new TypeCheckException("COS takes exactly 1 argument", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("COS takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+			case MAX -> {
+				if (argc != 2)
+					throw new TypeCheckException("MAX takes exactly 2 arguments", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("MAX takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+			case MIN -> {
+				if (argc != 2)
+					throw new TypeCheckException("MIN takes exactly 2 arguments", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("MIN takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+			case PI -> {
+				if (argc != 0)
+					throw new TypeCheckException("PI takes exactly 0 arguments", builtin);
+				yield ValueType.createNumber();
+			}
+			case POW -> {
+				if (argc != 2)
+					throw new TypeCheckException("POW takes exactly 2 arguments", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("POW takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+			case SIN -> {
+				if (argc != 1)
+					throw new TypeCheckException("SIN takes exactly 1 argument", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("SIN takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+			case SQRT -> {
+				if (argc != 1)
+					throw new TypeCheckException("SQRT takes exactly 1 argument", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("SQRT takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+			case TAN -> {
+				if (argc != 1)
+					throw new TypeCheckException("TAN takes exactly 1 argument", builtin);
+
+				var tvalid = types.allMatch(t -> t.isKind(ValueType.Kind.Number));
+				if (!tvalid)
+					throw new TypeCheckException("TAN takes only number arguments", builtin);
+
+				yield ValueType.createNumber();
+			}
+		};
+
+		builtin.annotate(TypeCheckStage.TYPE_KEY, type);
+	}
+
 }

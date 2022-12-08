@@ -78,7 +78,7 @@ public abstract class Value {
 		return new VoidValue(ValueType.createVoid());
 	}
 
-	public static Value createNumber(float value) {
+	public static Value createNumber(double value) {
 		return new NumberValue(ValueType.createNumber(), value);
 	}
 

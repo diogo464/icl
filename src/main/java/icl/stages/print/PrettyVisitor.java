@@ -3,6 +3,7 @@ package icl.stages.print;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
 import icl.ast.AstBool;
+import icl.ast.AstBuiltin;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
@@ -217,6 +218,19 @@ class PrettyVisitor implements AstVisitor {
 	@Override
 	public void acceptTypeAlias(AstTypeAlias typeAlias) {
 		print("type ", typeAlias.name, " = ", typeAlias.type.toString());
+	}
+
+	@Override
+	public void acceptBuiltin(AstBuiltin builtin) {
+		print(builtin.builtin.toString(), "(");
+		boolean printComma = false;
+		for (var arg : builtin.args) {
+			if (printComma)
+				print(",");
+			arg.accept(this);
+			printComma = true;
+		}
+		print(")");
 	}
 
 }

@@ -39,6 +39,17 @@ import icl.pipeline.PipelineStage;
  *     The field must exist in the record.
  *     The type of a field is the type of the field in the record.
  * 
+ * Builtin:
+ *  All builtins evaluate to the return type, it is invalid to use a builtin without the proper arguments.
+ *      SIN     - fn(Number) -> Number
+ *      COS     - fn(Number) -> Number
+ *      TAN     - fn(Number) -> Number
+ *      SQRT    - fn(Number) -> Number
+ *      ABS     - fn(Number) -> Number
+ *      POW     - fn(Number, Number) -> Number
+ *      MAX     - fn(Number, Number) -> Number
+ *      MIN     - fn(Number, Number) -> Number
+ *      PI      - fn() -> Number
  * ----------------
  * 
  * Annotations:

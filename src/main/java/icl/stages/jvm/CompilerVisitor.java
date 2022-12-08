@@ -8,6 +8,7 @@ import icl.ValueType;
 import icl.ast.AstAssign;
 import icl.ast.AstBinOp;
 import icl.ast.AstBool;
+import icl.ast.AstBuiltin;
 import icl.ast.AstCall;
 import icl.ast.AstDecl;
 import icl.ast.AstEmptyNode;
@@ -114,21 +115,21 @@ public class CompilerVisitor implements AstVisitor {
             case Number -> {
                 switch (node.kind) {
                     case ADD -> {
-                        this.method.visitInsn(Opcodes.FADD);
+                        this.method.visitInsn(Opcodes.DADD);
                     }
                     case SUB -> {
-                        this.method.visitInsn(Opcodes.FSUB);
+                        this.method.visitInsn(Opcodes.DSUB);
                     }
                     case MUL -> {
-                        this.method.visitInsn(Opcodes.FMUL);
+                        this.method.visitInsn(Opcodes.DMUL);
                     }
                     case DIV -> {
-                        this.method.visitInsn(Opcodes.FDIV);
+                        this.method.visitInsn(Opcodes.DDIV);
                     }
                     case CMP -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitInsn(Opcodes.DCMPL);
                         this.method.visitJumpInsn(Opcodes.IFEQ, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
@@ -139,7 +140,7 @@ public class CompilerVisitor implements AstVisitor {
                     case GT -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitInsn(Opcodes.DCMPL);
                         this.method.visitJumpInsn(Opcodes.IFGT, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
@@ -150,7 +151,7 @@ public class CompilerVisitor implements AstVisitor {
                     case GTE -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitInsn(Opcodes.DCMPL);
                         this.method.visitJumpInsn(Opcodes.IFGE, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
@@ -161,7 +162,7 @@ public class CompilerVisitor implements AstVisitor {
                     case LT -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitInsn(Opcodes.DCMPL);
                         this.method.visitJumpInsn(Opcodes.IFLT, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
@@ -172,7 +173,7 @@ public class CompilerVisitor implements AstVisitor {
                     case LTE -> {
                         var out = new Label();
                         var one = new Label();
-                        this.method.visitInsn(Opcodes.FCMPL);
+                        this.method.visitInsn(Opcodes.DCMPL);
                         this.method.visitJumpInsn(Opcodes.IFLE, one);
                         this.method.visitIntInsn(Opcodes.SIPUSH, 0);
                         this.method.visitJumpInsn(Opcodes.GOTO, out);
@@ -227,7 +228,7 @@ public class CompilerVisitor implements AstVisitor {
             case Number -> {
                 switch (node.kind) {
                     case NEG -> {
-                        this.method.visitInsn(Opcodes.FNEG);
+                        this.method.visitInsn(Opcodes.DNEG);
                     }
                     case POS -> {
                     }
@@ -415,7 +416,7 @@ public class CompilerVisitor implements AstVisitor {
 
         if (expr_type.isKind(ValueType.Kind.Number)) {
             this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
-                    "valueOf", "(F)Ljava/lang/String;",
+                    "valueOf", "(D)Ljava/lang/String;",
                     false);
         } else if (expr_type.isKind(ValueType.Kind.Boolean)) {
             this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
@@ -489,6 +490,82 @@ public class CompilerVisitor implements AstVisitor {
     @Override
     public void acceptTypeAlias(AstTypeAlias typeAlias) {
         // Do nothing
+    }
+
+    @Override
+    public void acceptBuiltin(AstBuiltin builtin) {
+        for (var arg : builtin.args)
+            arg.accept(this);
+
+        switch (builtin.builtin) {
+            case ABS -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "abs",
+                        "(D)D",
+                        false);
+            }
+            case COS -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "cos",
+                        "(D)D",
+                        false);
+            }
+            case MAX -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "max",
+                        "(DD)D",
+                        false);
+            }
+            case MIN -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "min",
+                        "(DD)D",
+                        false);
+            }
+            case PI -> {
+                this.method.visitLdcInsn((double) Math.PI);
+            }
+            case POW -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "pow",
+                        "(DD)D",
+                        false);
+            }
+            case SIN -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "sin",
+                        "(D)D",
+                        false);
+            }
+            case SQRT -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "sqrt",
+                        "(D)D",
+                        false);
+            }
+            case TAN -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "tan",
+                        "(D)D",
+                        false);
+            }
+        }
     }
 
 }

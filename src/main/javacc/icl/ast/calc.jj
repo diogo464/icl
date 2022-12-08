@@ -36,12 +36,13 @@ TOKEN :
 	< KW_PRINTLN: "println"											> |
 	< KW_NEW	: "new"												> |
 	< KW_TYPE	: "type"											> |
-	< TYPE_INT	: "int"												> |
+	< TYPE_NUM	: "number"											> |
 	< TYPE_BOOL	: "bool"											> |
 	< TYPE_STR	: "str"												> |
 	< TYPE_VOID	: "void"											> |
 	< IDENT		: (["a"-"z","A"-"Z","_"](["a"-"z","A"-"Z","0"-"9","_"])*) > |
-	< NUM		: ((["0"-"9"])+)									> |
+	< BUILTIN	: (["$"](["a"-"z","A"-"Z","0"-"9","_"])*) 			> |
+	< NUM		: (["0"-"9"](["0"-"9","."])*)						> |
 	< STRLIT	: "\"" (("\\" ("\\" | "n" | "r" | "\"")) | (~["\\", "\"", "\n", "\r"]))* "\"" > |
 	< MULTIAMP	: (["&"])+											> |
 	< DOT 		: "."												> |
@@ -391,6 +392,8 @@ AstNode ExprField():
 	{ return value; }
 }
 
+
+
 AstNode ExprLitParenCall():
 {
 	var n 			= (Token) null;
@@ -408,6 +411,7 @@ AstNode ExprLitParenCall():
 		n = <KW_NEW> t = Expr() { return Parser.astNew(Parser.span(n), t); } 	|
 		t = ExprFn() { return t; }												|
 		t = ExprRec() { return t; }												|
+		t = ExprBuiltin() { return t; }											|
 		<LPAREN> t = Expr() <RPAREN> { return t; }
 	)
 }
@@ -459,7 +463,7 @@ ValueType ValueType():
 	var fields		= new ArrayList<Parser.RecordFieldType>();
 }
 {
-	<TYPE_INT> { return ValueType.createNumber(); } 	|
+	<TYPE_NUM> { return ValueType.createNumber(); } 	|
 	<TYPE_BOOL> { return ValueType.createBoolean(); } 	|
 	<TYPE_STR> { return ValueType.createString(); } 	|
 	<TYPE_VOID> { return ValueType.createVoid(); } 		|
@@ -486,4 +490,23 @@ ValueType ValueType():
 		)*
 	<RBRACK> { return Parser.createRecordType(fields); } |
 	n = <IDENT> { return ValueType.createAlias(n.image); }
+}
+
+AstBuiltin ExprBuiltin():
+{
+	var n 		= (Token) null;
+	var a 		= (AstNode) null;
+	var args 	= new ArrayList<AstNode>();
+}
+{
+	n = <BUILTIN>
+	(
+		<LPAREN>
+			(
+				a = Expr() { args.add(a); }
+				(<COMMA> a = Expr() { args.add(a); })*
+			)?
+		<RPAREN>
+	)?
+	{ return Parser.astBuiltin(Parser.span(n), n.image.substring(1), args); }
 }
