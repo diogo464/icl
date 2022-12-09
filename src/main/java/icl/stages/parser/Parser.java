@@ -117,8 +117,8 @@ public class Parser {
 		return node;
 	}
 
-	static AstPrint astPrint(Span span, AstNode expr, boolean newline) {
-		var node = new AstPrint(expr, newline);
+	static AstPrint astPrint(Span span, AstNode expr, boolean newline, boolean nodecimal) {
+		var node = new AstPrint(expr, newline, nodecimal);
 		node.annotate(SPAN_KEY, span);
 		return node;
 	}

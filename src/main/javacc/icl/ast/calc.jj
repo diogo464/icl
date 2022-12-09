@@ -33,6 +33,7 @@ TOKEN :
 	< KW_FN		: "fn"												> |
 	< KW_STRUCT	: "struct"											> |
 	< KW_PRINT	: "print"											> |
+	< KW_PRINTD	: "printd"											> |
 	< KW_PRINTLN: "println"											> |
 	< KW_NEW	: "new"												> |
 	< KW_TYPE	: "type"											> |
@@ -135,13 +136,16 @@ AstNode ExprWhile():
 AstNode ExprPrint():
 {
 	var n 			= (Token) null;
-	var nn 			= (Token) null;
 	var expr 		= (AstNode) null;
 }
 {
-	(n = <KW_PRINT> | nn = <KW_PRINTLN>) (expr = Expr())?
-	{ if (expr == null) { expr = Parser.astEmptyNode(Parser.span(n == null ? nn : n)); } }
-	{ return Parser.astPrint(Parser.span(n == null ? nn : n, expr), expr, nn != null); }
+	(n = <KW_PRINT> | n = <KW_PRINTD> | n = <KW_PRINTLN>) (expr = Expr())?
+	{ 
+		if (expr == null) { 
+			expr = Parser.astEmptyNode(Parser.span(n));
+		} 
+	}
+	{ return Parser.astPrint(Parser.span(n, expr), expr, n.kind == KW_PRINTLN, n.kind == KW_PRINTD); }
 }
 
 AstNode ExprTypeAlias():
@@ -195,7 +199,7 @@ AstNode ExprBlock():
 				if(semicol == null && body == null)
 					body = expr;
 				else if(semicol != null && body != null)
-					throw new RuntimeException("Statement cannot follow last expression in block");
+					throw new RuntimeException("Statement cannot follow last expression in block " + semicol.beginLine);
 				else if(semicol == null && body != null)
 					throw new RuntimeException("Expression cannot follow last expression in block");
 				else
@@ -447,8 +451,12 @@ AstNode ExprRec():
 	beginToken = <KW_STRUCT>
 	<LBRACK>
 		(
-			name = <IDENT> <EQ> value = Expr() <SEMICOL>
-			{ fields.add(new Parser.RecordField(name.image, value)); }
+			{ value = null; }
+			name = <IDENT> (<EQ> value = Expr())? <SEMICOL>
+			{
+				var v = value == null ? Parser.astVar(Parser.span(name), name.image) : value;
+				fields.add(new Parser.RecordField(name.image, v));
+			}
 		)*
 	endToken = <RBRACK>
 	{ return Parser.astRecord(Parser.span(beginToken, endToken), fields); }

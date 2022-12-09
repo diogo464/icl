@@ -253,9 +253,14 @@ class Visitor implements AstVisitor {
 			bodyenv.value.define(arg.name, new Variable(this.resolve(arg.type), true));
 		var body = TypeCheckStage.check(bodyenv, fn.body);
 		if (fn.ret.isPresent()) {
-			var retType = this.resolve(fn.ret.get());
-			if (!retType.equals(body.getAnnotation(TypeCheckStage.TYPE_KEY)))
-				throw new TypeCheckException("Function return type does not match body type", fn);
+			var rettype = this.resolve(fn.ret.get());
+			var bodytype = body.getAnnotation(TypeCheckStage.TYPE_KEY);
+			if (!rettype.equals(bodytype)) {
+				throw new TypeCheckException(
+						"Function return type does not match body type, expected " + rettype.toString() + " but got "
+								+ bodytype.toString(),
+						fn);
+			}
 		}
 		var argtypes = fn.arguments.stream().map(a -> this.resolve(a.type)).toList();
 		var type = ValueType.createFunction(argtypes, body.getAnnotation(TypeCheckStage.TYPE_KEY));
@@ -276,10 +281,10 @@ class Visitor implements AstVisitor {
 	@Override
 	public void acceptField(AstField field) {
 		var record = TypeCheckStage.check(this.env, field.value);
-		var recordType = record.getAnnotation(TypeCheckStage.TYPE_KEY);
-		if (!recordType.isKind(ValueType.Kind.Record))
-			throw new TypeCheckException("Attempt to access field on non-record type", field);
-		var fieldType = recordType.getRecord().tryGet(field.field);
+		var rectype = record.getAnnotation(TypeCheckStage.TYPE_KEY);
+		if (!rectype.isKind(ValueType.Kind.Record))
+			throw new TypeCheckException("Attempt to access field on non-record type " + rectype, field);
+		var fieldType = rectype.getRecord().tryGet(field.field);
 		if (fieldType.isEmpty())
 			throw new TypeCheckException("Attempt to access non-existent field", field);
 		field.annotate(TypeCheckStage.TYPE_KEY, fieldType.get());
@@ -305,6 +310,13 @@ class Visitor implements AstVisitor {
 			if (target == null)
 				throw new TypeCheckException("Failed to resolve type alias: " + type.getAlias());
 			return this.resolve(target);
+		} else if (type.isKind(ValueType.Kind.Record)) {
+			var fields = type.getRecord().fields();
+			var newfields = new HashMap<String, ValueType>();
+			for (var entry : fields) {
+				newfields.put(entry.getKey(), this.resolve(entry.getValue()));
+			}
+			return ValueType.createRecord(newfields);
 		}
 		return type;
 	}

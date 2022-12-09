@@ -11,6 +11,7 @@ import icl.stages.typecheck.TypeCheckStage;
 
 public class Compiler {
     public static final int SL_INDEX = 32;
+    public static final int SL_SCRATCH = 64;
 
     /**
      * Compiles a Main class with a main method.

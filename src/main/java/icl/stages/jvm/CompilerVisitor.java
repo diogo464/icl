@@ -31,7 +31,9 @@ import icl.stages.typecheck.TypeCheckStage;
 
 public class CompilerVisitor implements AstVisitor {
 
-    private static final int SL_INDEX = 32;
+    private static final int SL_INDEX = Compiler.SL_INDEX;
+    private static final int SL_SCRATCH = Compiler.SL_SCRATCH;
+
     private final MethodVisitor method;
     private Environment env;
 
@@ -46,7 +48,7 @@ public class CompilerVisitor implements AstVisitor {
      * @param frame The starting frame
      * @param depth The depth of the frame to push starting from the given frame
      */
-    private void pushStackFrame(Environment frame, int depth) {
+    private void pushEnv(Environment frame, int depth) {
         var current = frame;
         this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
         for (var i = 0; i < depth; i++) {
@@ -57,14 +59,63 @@ public class CompilerVisitor implements AstVisitor {
         }
     }
 
-    private void pushVariable(String name) {
+    private void pushVar(String name) {
         var lookup = this.env.lookup(name).get();
-        this.pushStackFrame(this.env, lookup.depth);
+        this.pushEnv(this.env, lookup.depth);
         this.method.visitFieldInsn(
                 Opcodes.GETFIELD,
                 lookup.env.getTypename(),
                 lookup.field.field,
                 lookup.field.descriptor);
+    }
+
+    /**
+     * Assign the value on the top of the stack to the given variable.
+     * The variable on the stack must have the same type as the variable being
+     * assigned to.
+     * 
+     * @param name The name of the variable to assign to
+     */
+    private void assignVar(String name) {
+        var lookup = this.env.lookup(name).get();
+        this.method.visitVarInsn(Opcodes.ASTORE, SL_SCRATCH);
+        this.pushEnv(this.env, lookup.depth);
+        this.method.visitVarInsn(Opcodes.ALOAD, SL_SCRATCH);
+        this.method.visitFieldInsn(
+                Opcodes.PUTFIELD,
+                lookup.env.getTypename(),
+                lookup.field.field,
+                lookup.field.descriptor);
+    }
+
+    private void beginEnv() {
+        var new_env = this.env.begin();
+        var parent_descriptor = this.env.getDescriptor();
+
+        Compiler.compileBasicNew(this.method, new_env.getTypename());
+        this.method.visitInsn(Opcodes.DUP);
+        this.pushEnv(this.env, 0);
+
+        this.method.visitFieldInsn(
+                Opcodes.PUTFIELD,
+                new_env.getTypename(),
+                "parent",
+                parent_descriptor);
+        this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
+        this.env = new_env;
+    }
+
+    private void endEnv() {
+        var context = this.env.getContext();
+        context.compile(this.env);
+        this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
+        this.method.visitFieldInsn(
+                Opcodes.GETFIELD,
+                this.env.getTypename(),
+                "parent",
+                this.env.getParent().getDescriptor());
+        this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
+        this.env = this.env.end();
     }
 
     @Override
@@ -255,7 +306,7 @@ public class CompilerVisitor implements AstVisitor {
         var vtype = node.value.getAnnotation(TypeCheckStage.TYPE_KEY);
         var field = this.env.define(node.name, vtype);
 
-        this.pushStackFrame(this.env, 0);
+        this.pushEnv(this.env, 0);
         node.value.accept(this);
         this.method.visitFieldInsn(
                 Opcodes.PUTFIELD,
@@ -266,36 +317,11 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptScope(AstScope node) {
-        var context = this.env.getContext();
-        var new_env = this.env.begin();
-        var parent_descriptor = this.env.getDescriptor();
-
-        Compiler.compileBasicNew(this.method, new_env.getTypename());
-        this.method.visitInsn(Opcodes.DUP);
-        this.pushStackFrame(this.env, 0);
-
-        this.method.visitFieldInsn(
-                Opcodes.PUTFIELD,
-                new_env.getTypename(),
-                "parent",
-                parent_descriptor);
-        this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
-
-        this.env = new_env;
+        this.beginEnv();
         for (var stmt : node.stmts)
             stmt.accept(this);
         node.expr.accept(this);
-
-        context.compile(this.env);
-        this.env = this.env.end();
-
-        this.method.visitVarInsn(Opcodes.ALOAD, SL_INDEX);
-        this.method.visitFieldInsn(
-                Opcodes.GETFIELD,
-                new_env.getTypename(),
-                "parent",
-                parent_descriptor);
-        this.method.visitVarInsn(Opcodes.ASTORE, SL_INDEX);
+        this.endEnv();
     }
 
     @Override
@@ -304,7 +330,7 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptVar(AstVar node) {
-        this.pushVariable(node.name);
+        this.pushVar(node.name);
     }
 
     @Override
@@ -388,7 +414,7 @@ public class CompilerVisitor implements AstVisitor {
             var reference_typename = Names.typename(ltype);
             var target_descriptor = Names.descriptor(rtype);
 
-            this.pushVariable(assign.name);
+            this.pushVar(assign.name);
             assign.value.accept(this);
             this.method.visitFieldInsn(
                     Opcodes.PUTFIELD,
@@ -398,7 +424,7 @@ public class CompilerVisitor implements AstVisitor {
             return;
         }
 
-        this.pushStackFrame(this.env, lookup.depth);
+        this.pushEnv(this.env, lookup.depth);
         assign.value.accept(this);
         this.method.visitFieldInsn(
                 Opcodes.PUTFIELD,
@@ -415,13 +441,17 @@ public class CompilerVisitor implements AstVisitor {
         print.expr.accept(this);
 
         if (expr_type.isKind(ValueType.Kind.Number)) {
-            this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
-                    "valueOf", "(D)Ljava/lang/String;",
-                    false);
+            if (print.nodecimal) {
+                this.method.visitInsn(Opcodes.D2I);
+                this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
+                        "valueOf", "(I)Ljava/lang/String;", false);
+            } else {
+                this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
+                        "valueOf", "(D)Ljava/lang/String;", false);
+            }
         } else if (expr_type.isKind(ValueType.Kind.Boolean)) {
             this.method.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/String",
-                    "valueOf", "(Z)Ljava/lang/String;",
-                    false);
+                    "valueOf", "(Z)Ljava/lang/String;", false);
         } else if (expr_type.isKind(ValueType.Kind.Void)) {
             this.method.visitLdcInsn("");
         } else if (!expr_type.isKind(ValueType.Kind.String)) {
@@ -456,7 +486,7 @@ public class CompilerVisitor implements AstVisitor {
 
         Compiler.compileBasicNew(this.method, function_typename);
         this.method.visitInsn(Opcodes.DUP);
-        this.pushStackFrame(this.env, 0);
+        this.pushEnv(this.env, 0);
         this.method.visitFieldInsn(Opcodes.PUTFIELD, function_typename, "frame", this.env.getDescriptor());
     }
 
