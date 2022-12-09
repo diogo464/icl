@@ -31,7 +31,7 @@ import icl.stages.typecheck.TypeCheckStage;
 
 public class CompilerVisitor implements AstVisitor {
 
-    private static final int SL_INDEX = 3;
+    private static final int SL_INDEX = 32;
     private final MethodVisitor method;
     private Environment env;
 

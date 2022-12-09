@@ -4,8 +4,10 @@ interface Foo {
 
 public class Main implements Foo {
 	public static void main(String[] args) {
-		float x = 10.25f;
-		Math.abs(x);
+	}
+
+	public double bar(double x, double y, double z) {
+		return x + y + z;
 	}
 
 	public int foo(int a, int b, int c, int d) {

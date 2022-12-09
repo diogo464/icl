@@ -12,7 +12,7 @@ public class Names {
             case Record -> typename(vtype.getRecord());
             case Reference -> typename(vtype.getReference());
             case String -> throw new IllegalArgumentException("String has no typename");
-            case Void -> "java/lang/Object";
+            case Void -> throw new IllegalArgumentException("Void has no typename");
         };
     }
 
@@ -50,6 +50,7 @@ public class Names {
             case Boolean -> "I";
             case Number -> "D";
             case String -> "Ljava/lang/String;";
+            case Void -> "V";
             default -> typenameToDescriptor(typename(vtype));
         };
     }

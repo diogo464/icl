@@ -10,7 +10,7 @@ import icl.ast.AstNode;
 import icl.stages.typecheck.TypeCheckStage;
 
 public class Compiler {
-    public static final int SL_INDEX = 3;
+    public static final int SL_INDEX = 32;
 
     /**
      * Compiles a Main class with a main method.
@@ -108,6 +108,7 @@ public class Compiler {
         method.visitFieldInsn(Opcodes.GETFIELD, function_typename, "frame", environment_descriptor);
         method.visitFieldInsn(Opcodes.PUTFIELD, fenv.getTypename(), "parent", environment_descriptor);
 
+        var register_index = 1;
         for (var i = 1; i <= fn.arguments.size(); ++i) {
             var arg = fn.arguments.get(i - 1);
             var arg_type = ftype.args.get(i - 1);
@@ -119,9 +120,18 @@ public class Compiler {
 
             // Load the argument to the stack
             switch (arg_type.getKind()) {
-                case Boolean -> method.visitVarInsn(Opcodes.ILOAD, arg_index);
-                case Number -> method.visitVarInsn(Opcodes.FLOAD, arg_index);
-                case Function, Record, Reference, String -> method.visitVarInsn(Opcodes.ALOAD, arg_index);
+                case Boolean -> {
+                    method.visitVarInsn(Opcodes.ILOAD, register_index);
+                    register_index += 1;
+                }
+                case Number -> {
+                    method.visitVarInsn(Opcodes.DLOAD, register_index);
+                    register_index += 2;
+                }
+                case Function, Record, Reference, String -> {
+                    method.visitVarInsn(Opcodes.ALOAD, register_index);
+                    register_index += 1;
+                }
                 default -> throw new IllegalStateException();
             }
 
@@ -142,7 +152,7 @@ public class Compiler {
         var return_type = ftype.ret;
         switch (return_type.getKind()) {
             case Boolean -> method.visitInsn(Opcodes.IRETURN);
-            case Number -> method.visitInsn(Opcodes.FRETURN);
+            case Number -> method.visitInsn(Opcodes.DRETURN);
             case Function, Record, Reference, String -> method.visitInsn(Opcodes.ARETURN);
             case Void -> method.visitInsn(Opcodes.RETURN);
             default -> throw new IllegalStateException();
