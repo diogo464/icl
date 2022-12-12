@@ -4,6 +4,7 @@
 /calc_target/
 
 /*.calc
+!/raytracer.calc
 /*.class
 /analysis
 /disass
