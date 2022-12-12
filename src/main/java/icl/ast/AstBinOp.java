@@ -6,6 +6,7 @@ public class AstBinOp extends AstNode {
 		SUB,
 		MUL,
 		DIV,
+		IDIV,
 		CMP,
 		GT,
 		GTE,

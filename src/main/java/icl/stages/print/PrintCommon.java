@@ -8,6 +8,7 @@ class PrintCommon {
         return switch (kind) {
             case ADD -> "+";
             case DIV -> "/";
+            case IDIV -> "//";
             case MUL -> "*";
             case SUB -> "-";
             case LAND -> "&&";

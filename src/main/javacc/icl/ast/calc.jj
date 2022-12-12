@@ -52,6 +52,7 @@ TOKEN :
 	< MINUS		: "-" 												> |
 	< MUL		: "*" 												> |
 	< DIV		: "/" 												> |
+	< IDIV		: "//" 												> |
 	< LPAREN	: "("												> |
 	< RPAREN	: ")"												> |
 	< LBRACK	: "{"												> |
@@ -319,10 +320,11 @@ AstNode ExprMulDiv():
 }
 {
 	l = ExprUnary() ( 
-		(op = <MUL> | op = <DIV>) r = ExprUnary()
+		(op = <MUL> | op = <DIV> | op = <IDIV>) r = ExprUnary()
 		{
 				if( op.kind == MUL ) { l = Parser.astBinOp(AstBinOp.Kind.MUL, l, r); }
-				else { l = Parser.astBinOp(AstBinOp.Kind.DIV, l, r); }
+				else if( op.kind == DIV ) { l = Parser.astBinOp(AstBinOp.Kind.DIV, l, r); }
+				else { l = Parser.astBinOp(AstBinOp.Kind.IDIV, l, r); }
 		}
 	)*
 	{ return l; }

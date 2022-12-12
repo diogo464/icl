@@ -69,7 +69,7 @@ class Visitor implements AstVisitor {
 			case Number -> {
 				if (!CalcUtils.oneOf(node.kind, AstBinOp.Kind.ADD, AstBinOp.Kind.SUB, AstBinOp.Kind.MUL,
 						AstBinOp.Kind.DIV, AstBinOp.Kind.CMP, AstBinOp.Kind.GT, AstBinOp.Kind.GTE, AstBinOp.Kind.LT,
-						AstBinOp.Kind.LTE)) {
+						AstBinOp.Kind.LTE, AstBinOp.Kind.IDIV)) {
 					throw new TypeCheckException("Invalid binary operator for number", node);
 				}
 				if (CalcUtils.oneOf(node.kind, AstBinOp.Kind.CMP, AstBinOp.Kind.GT, AstBinOp.Kind.GTE, AstBinOp.Kind.LT,

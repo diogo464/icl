@@ -14,7 +14,7 @@ import icl.pipeline.PipelineStage;
  *	BinOp:
  *		Both sides of the binary operator must have the same type.
  *		AllowedTypes:
- *			Number: 	ADD, SUB, MUL, DIV, CMP, GT, GTE, LT, LTE
+ *			Number: 	ADD, SUB, MUL, DIV, IDIV, CMP, GT, GTE, LT, LTE
  *			Boolean:	CMP, LAND, LOR
  *          String:     ADD, CMP
  *
@@ -31,7 +31,8 @@ import icl.pipeline.PipelineStage;
  * 	UnaryOp:
  * 		AllowedTypes:
  * 			Number: 	POS, NEG
- * 			Boolean:	LNOT
+ * 			Boolean:
+ 	LNOT
  * 			Reference:	DEREF
  *		The type of a Deref unary op is the target type of the reference.
  *

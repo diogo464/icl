@@ -75,6 +75,7 @@ class Visitor implements AstVisitor {
 					case SUB -> Value.createNumber(left - right);
 					case MUL -> Value.createNumber(left * right);
 					case DIV -> Value.createNumber(left / right);
+					case IDIV -> Value.createNumber(Math.floor(left / right));
 					case CMP -> Value.createBoolean(left == right);
 					case GT -> Value.createBoolean(left > right);
 					case GTE -> Value.createBoolean(left >= right);

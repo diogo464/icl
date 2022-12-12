@@ -177,6 +177,11 @@ public class CompilerVisitor implements AstVisitor {
                     case DIV -> {
                         this.method.visitInsn(Opcodes.DDIV);
                     }
+                    case IDIV -> {
+                        this.method.visitInsn(Opcodes.DDIV);
+                        this.method.visitInsn(Opcodes.D2I);
+                        this.method.visitInsn(Opcodes.I2D);
+                    }
                     case CMP -> {
                         var out = new Label();
                         var one = new Label();
