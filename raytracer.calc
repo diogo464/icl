@@ -19,6 +19,11 @@
 		let dot		= fn(v1: vec3, v2: vec3) -> number {
 			v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 		};
+		let cross 	= fn(v1: vec3, v2: vec3) -> vec3 {
+			create(v1.y * v2.z - v1.z * v2.y,
+			       v1.z * v2.x - v1.x * v2.z,
+			       v1.x * v2.y - v1.y * v2.x)
+		};
 		let abs 	= fn(v: vec3) -> vec3 {
 			create($abs(v.x), $abs(v.y), $abs(v.z))
 		};
@@ -39,6 +44,13 @@
 		struct { show; showl; create; zero; scale; dot; abs; len; len2; normalized; add; sub; }
 	};
 
+	let colors = struct {
+		white 	= vec3.create(1, 1, 1);
+		red 	= vec3.create(1, 0, 0);
+		green 	= vec3.create(0, 1, 0);
+		blue 	= vec3.create(0, 0, 1);
+	};
+
 	type ray = struct { origin: vec3; dir: vec3; };
 	let ray = {
 		let create 	= fn(origin: vec3, dir: vec3) -> ray { 
@@ -50,10 +62,20 @@
 		struct { create; show; showl; at; }
 	};
 
-	type traceres = struct { hit: bool; pos: vec3; norm: vec3; };
+	type material = struct { color: vec3; reflectivity: number; };
+	let material = {
+		let create = fn(color: vec3, reflectivity: number) -> material {
+			struct { color; reflectivity; }
+		};
+		let default = create(colors.white, 0);
+
+		struct { create; default; }
+	};
+
+	type traceres = struct { hit: bool; pos: vec3; norm: vec3; mat: material; };
 	let traceres = {
-		let hit = fn(pos: vec3, norm: vec3) -> traceres { struct { hit = true; pos; norm; } };
-		let miss = fn() -> traceres { struct { hit = false; pos = vec3.zero(); norm = vec3.zero(); } };
+		let hit = fn(pos: vec3, norm: vec3, mat: material) -> traceres { struct { hit = true; pos; norm; mat; } };
+		let miss = fn() -> traceres { struct { hit = false; pos = vec3.zero(); norm = vec3.zero(); mat = material.default; } };
 		struct { hit; miss; }
 	};
 
@@ -70,7 +92,7 @@
 			}
 		};
 
-		let sphere 	= fn(r: ray, center: vec3, radius: number) -> traceres {
+		let sphere 	= fn(r: ray, center: vec3, radius: number, mat: material) -> traceres {
 			let f = vec3.sub(r.origin, center);
 			if vec3.dot(f, r.dir) > 0 { traceres.miss() }
 			else {
@@ -82,22 +104,73 @@
 					let t = $min(q.s1, q.s2);
 					let hitpos = ray.at(r, t);
 					let normal = vec3.normalized(vec3.sub(hitpos, center));
-					traceres.hit(hitpos, normal)
+					traceres.hit(hitpos, normal, mat)
 				} else { traceres.miss() }
 			}
 		};
 		struct { sphere; }
 	};
 
-	let colors = struct {
-		white 	= vec3.create(1, 1, 1);
-		red 	= vec3.create(1, 0, 0);
-		green 	= vec3.create(0, 1, 0);
-		blue 	= vec3.create(0, 0, 1);
+	type object = fn(ray) -> traceres;
+	let object = {
+		let empty = fn(r: ray) -> traceres { traceres.miss() };
+
+		let sphere = fn(center: vec3, radius: number, mat: material) -> object {
+			fn(r: ray) -> traceres { geom.sphere(r, center, radius, mat) }
+		};
+
+		let and = fn(o1: object, o2: object) -> object {
+			fn(r: ray) -> traceres {
+				let t1 = o1(r);
+				let t2 = o2(r);
+				if t1.hit && t2.hit {
+					let dist1 = vec3.len(vec3.sub(t1.pos, r.origin));
+					let dist2 = vec3.len(vec3.sub(t2.pos, r.origin));
+					if dist1 < dist2 { t1 } else { t2 }
+				} else if t1.hit { t1 }
+				else { t2 }
+			}
+		};
+
+		struct { empty; sphere; and; }
 	};
 
 	let world = {
+		let SUN_DIR = vec3.normalized(vec3.create(1, 1, 1));
+		let AMBIENT = 0.1;
 
+		let sky_color = fn(r: ray) -> vec3 {
+			let ud = vec3.normalized(r.dir);
+			let t = 0.5 * (ud.y + 1.0);
+			vec3.add(
+				vec3.scale(colors.white, 1.0 - t),
+				vec3.scale(vec3.create(0.5, 0.7, 1.0), t)
+			)
+		};
+
+		let world_objects = object.and(
+			object.sphere(vec3.create(0, -100.5, -1), 100, material.create(colors.green, 0)),
+		object.and(
+			object.sphere(vec3.create(0, 0, -1), 0.5, material.create(colors.red, 0)),
+		object.and(
+			object.sphere(vec3.create(1, 0, -1), 0.5, material.create(colors.blue, 0)),
+		object.and(
+			object.sphere(vec3.create(-1, 0, -1), 0.5, material.create(colors.red, 0)),
+			object.empty
+		))));
+
+		fn(r: ray) -> vec3 {
+			let t = world_objects(r);
+			if t.hit {
+				let intensity = $max(0.0, vec3.dot(t.norm, SUN_DIR));
+				let diffuse = vec3.scale(t.mat.color, intensity);
+				let ambient = vec3.scale(t.mat.color, AMBIENT);
+				vec3.add(diffuse, ambient)
+			}
+			else {
+				sky_color(r)
+			}
+		}
 	};
 
 	fn() {
@@ -116,15 +189,7 @@
 			)
 		};
 
-		let ray_color = fn(r: ray) -> vec3 {
-			let trace = geom.sphere(r, vec3.create(0, 0, -1), 0.5);
-			if trace.hit {
-				vec3.abs(trace.norm)
-			} else {
-				sky_color(r)
-			}
-		};
-
+		let ray_color = world;
 		let aspect_ratio = 16 / 9;
 		let width = 400;
 		let height = width // aspect_ratio;
@@ -143,6 +208,8 @@
 			vec3.create(0, 0, focal_length)
 		);
 
+
+
 		println "P3";
 		printd width; print " "; printd height; println;
 		println "255";
@@ -152,6 +219,8 @@
 			while x < width {
 				let u = x / (width - 1);
             	let v = y / (height - 1);
+				
+
 				let dir = vec3.add(
 					vec3.add(
 						lower_left_corner,
