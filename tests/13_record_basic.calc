@@ -1,5 +1,5 @@
 {
-    let rec = struct { x = 5; y = 10; z = fn(x: number) { x + 1 };};
+    let rec = struct { x = 5; y = 10; z = fn(x: number) -> number { x + 1 };};
     println rec.x;
     println rec.y;
     println rec.z(5);

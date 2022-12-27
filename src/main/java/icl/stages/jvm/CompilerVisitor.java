@@ -482,17 +482,30 @@ public class CompilerVisitor implements AstVisitor {
 
     @Override
     public void acceptFn(AstFn fn) {
+        this.beginEnv();
         var context = this.env.getContext();
         var function_type = fn.getAnnotation(TypeCheckStage.TYPE_KEY).getFunction();
         var function_typename = context.generate(Namespace.FUNCTION);
+        this.env.define("this", ValueType.createFunction(function_type));
+
         var compiled = Compiler.compile(this.env, function_typename, fn);
         context.emit(compiled);
         context.compile(function_type);
 
         Compiler.compileBasicNew(this.method, function_typename);
-        this.method.visitInsn(Opcodes.DUP);
+        this.method.visitVarInsn(Opcodes.ASTORE, SL_SCRATCH);
+
+        var this_field = this.env.lookup("this").get().field;
+        this.pushEnv(this.env, 0);
+        this.method.visitVarInsn(Opcodes.ALOAD, SL_SCRATCH);
+        this.method.visitFieldInsn(Opcodes.PUTFIELD, this.env.getTypename(), this_field.field, this_field.descriptor);
+
+        this.method.visitVarInsn(Opcodes.ALOAD, SL_SCRATCH);
         this.pushEnv(this.env, 0);
         this.method.visitFieldInsn(Opcodes.PUTFIELD, function_typename, "frame", this.env.getDescriptor());
+
+        this.method.visitVarInsn(Opcodes.ALOAD, SL_SCRATCH);
+        this.endEnv();
     }
 
     @Override

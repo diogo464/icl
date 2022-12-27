@@ -1,0 +1,25 @@
+{
+    let f = fn(d: number) {
+        if d > 0 {
+            println d;
+            this(d - 1)
+        } else {
+            println "done"
+        }
+    };
+
+    let f2 = fn() {
+        let f3 = fn(d: number) {
+            if d > 0 {
+                println d;
+                this(d - 1)
+            } else {
+                println "done"
+            }
+        };
+        f3(5)
+    };
+    
+    f(5);
+    f2();
+};;

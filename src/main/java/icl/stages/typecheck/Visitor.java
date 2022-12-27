@@ -251,20 +251,23 @@ class Visitor implements AstVisitor {
 		var bodyenv = this.env.beginScope();
 		for (var arg : fn.arguments)
 			bodyenv.value.define(arg.name, new Variable(this.resolve(arg.type), true));
-		var body = TypeCheckStage.check(bodyenv, fn.body);
-		if (fn.ret.isPresent()) {
-			var rettype = this.resolve(fn.ret.get());
-			var bodytype = body.getAnnotation(TypeCheckStage.TYPE_KEY);
-			if (!rettype.equals(bodytype)) {
-				throw new TypeCheckException(
-						"Function return type does not match body type, expected " + rettype.toString() + " but got "
-								+ bodytype.toString(),
-						fn);
-			}
-		}
 		var argtypes = fn.arguments.stream().map(a -> this.resolve(a.type)).toList();
-		var type = ValueType.createFunction(argtypes, body.getAnnotation(TypeCheckStage.TYPE_KEY));
-		fn.annotate(TypeCheckStage.TYPE_KEY, type);
+		var rettype = fn.ret.map(this::resolve).orElse(ValueType.createVoid());
+		var fntype = ValueType.createFunction(argtypes, rettype);
+
+		// Define 'this' inside function to allow for recursion even on unamed functions
+		bodyenv.value.define("this", new Variable(fntype, false));
+
+		var body = TypeCheckStage.check(bodyenv, fn.body);
+		var bodytype = body.getAnnotation(TypeCheckStage.TYPE_KEY);
+		if (!rettype.equals(bodytype)) {
+			throw new TypeCheckException(
+					"Function return type does not match body type, expected " + rettype.toString() + " but got "
+							+ bodytype.toString(),
+					fn);
+		}
+
+		fn.annotate(TypeCheckStage.TYPE_KEY, fntype);
 	}
 
 	@Override

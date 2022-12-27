@@ -298,6 +298,11 @@ public class ValueType {
 		return new ValueType(new Function(args, ret));
 	}
 
+	public static ValueType createFunction(Function ty) {
+		assert ty != null;
+		return new ValueType(ty);
+	}
+
 	public static ValueType createRecord(Map<String, ValueType> fields) {
 		assert fields != null;
 		return new ValueType(new Record(fields));

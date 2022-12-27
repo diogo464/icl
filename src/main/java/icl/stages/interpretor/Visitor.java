@@ -227,6 +227,7 @@ class Visitor implements AstVisitor {
 		var fnenv = this.environment.beginScope();
 		var body = fn.body;
 		var fnvalue = Value.createFunction(type, fnenv, fn.arguments, body);
+		fnenv.define("this", fnvalue);
 		this.value = fnvalue;
 	}
 

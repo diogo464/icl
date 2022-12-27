@@ -1,7 +1,7 @@
 {
     type vec3 = struct { x: number; y: number; z: number; };
     let v: vec3 = struct { x= 1; y = 2; z = 3; };
-    let n: fn() -> vec3 = fn() { struct { x = 1; y = 2; z = 3; } };
+    let n: fn() -> vec3 = fn() -> vec3 { struct { x = 1; y = 2; z = 3; } };
     let x = n();
 
     println x.x;
