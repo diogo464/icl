@@ -1,4 +1,11 @@
 {
+	let math = {
+		let rad = fn(deg: number) -> number { deg * $pi / 180 };
+		let deg = fn(rad: number) -> number { rad * 180 / $pi };
+
+		struct { rad; deg; }
+	};
+
 	type vec3 = struct { x: number; y: number; z: number; };
 	let vec3 = {
 		let show 	= fn(v:vec3) { 
@@ -41,7 +48,7 @@
 			create(v1.x-v2.x, v1.y-v2.y, v1.z-v2.z)
 		};
 		let neg 	= fn(v: vec3) -> vec3 { scale(v, -1) };
-		struct { show; showl; create; zero; scale; dot; abs; len; len2; normalized; add; sub; }
+		struct { show; showl; create; zero; scale; dot; cross; abs; len; len2; normalized; add; sub; }
 	};
 
 	let colors = struct {
@@ -190,54 +197,43 @@
 		};
 
 		let ray_color = world;
-		let aspect_ratio = 16 / 9;
+		let fovh = math.rad(75);
+		let fovv = math.rad(40);
+		let aspect_ratio = fovh / fovv;
 		let width = 400;
 		let height = width // aspect_ratio;
 		let viewport_height = 2.0;
 		let viewport_width = viewport_height * aspect_ratio;
-		let focal_length = 1.0;
-
-		let origin = vec3.create(0, 0, 0);
-    	let horizontal = vec3.create(viewport_width, 0, 0);
-    	let vertical = vec3.create(0, viewport_height, 0);
-		let lower_left_corner = vec3.sub(
-			vec3.sub(
-				vec3.sub(origin, vec3.scale(horizontal, 0.5)),
-				vec3.scale(vertical, 0.5)
-			),
-			vec3.create(0, 0, focal_length)
-		);
-
-
+		let origin = vec3.create(-2, 1, 5);
+		let lookat = vec3.create(0, 0, 0);
 
 		println "P3";
 		printd width; print " "; printd height; println;
 		println "255";
-		let mut y = height;
-		while y >= 0 {
+		let mut y = 0;
+		while y < height {
 			let mut x = 0;
 			while x < width {
-				let u = x / (width - 1);
-            	let v = y / (height - 1);
-				
-
-				let dir = vec3.add(
+				let u = ((x / (width - 1)) - 0.5) * 2;
+            	let v = ((y / (height - 1)) - 0.5) * 2;
+				let fwd = vec3.normalized(vec3.sub(lookat, origin));
+				let right = vec3.cross(fwd, vec3.create(0, 1, 0));
+				let up = vec3.cross(fwd, right);
+				let dir = vec3.normalized(vec3.add(
 					vec3.add(
-						lower_left_corner,
-						vec3.scale(horizontal, u)
+						fwd,
+						vec3.scale(right, u * $tan(fovh / 2))
 					),
-					vec3.sub(
-						vec3.scale(vertical, v),
-						origin
-					)
-				);
+					vec3.scale(up, $tan(fovv / 2) * v)
+				));
+
 				let r = ray.create(origin, dir);
 				let color = ray_color(r);
 				printcolor(color);
 
 				x := x + 1;
 			};
-			y := y - 1;
+			y := y + 1;
 		};
 	}();
 };;
