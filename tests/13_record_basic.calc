@@ -3,6 +3,4 @@
     println rec.x;
     println rec.y;
     println rec.z(5);
-    rec.x := 10;
-    println rec.x;
 };;
