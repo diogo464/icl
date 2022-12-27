@@ -1,5 +1,7 @@
 package icl.stages.jvm;
 
+import java.security.NoSuchAlgorithmException;
+
 import icl.ValueType;
 
 public class Names {
@@ -25,7 +27,7 @@ public class Names {
             sb.append("_");
             sb.append(mangle(arg));
         }
-        return sb.toString();
+        return hash(sb.toString());
     }
 
     public static String typename(ValueType.Record record) {
@@ -35,7 +37,7 @@ public class Names {
             sb.append("_");
             sb.append(mangle(ftype.getValue()));
         }
-        return sb.toString();
+        return hash(sb.toString());
     }
 
     public static String typename(ValueType.Reference ref) {
@@ -82,7 +84,11 @@ public class Names {
         return "L" + typename + ";";
     }
 
-    private static String mangle(ValueType vtype) {
+    private static String mangle(ValueType type) {
+        return hash(mangleHelper(type));
+    }
+
+    private static String mangleHelper(ValueType vtype) {
         return switch (vtype.getKind()) {
             case Alias -> throw new IllegalStateException();
             case Boolean -> "b";
@@ -90,9 +96,9 @@ public class Names {
                 var fn = vtype.getFunction();
                 var sb = new StringBuilder();
                 sb.append("f");
-                sb.append(mangle(fn.ret));
+                sb.append(mangleHelper(fn.ret));
                 for (var arg : fn.args) {
-                    sb.append(mangle(arg));
+                    sb.append(mangleHelper(arg));
                 }
                 yield sb.toString();
             }
@@ -102,7 +108,7 @@ public class Names {
                 var sb = new StringBuilder();
                 sb.append("r");
                 for (var ftype : record.fields()) {
-                    sb.append(mangle(ftype.getValue()));
+                    sb.append(mangleHelper(ftype.getValue()));
                 }
                 yield sb.toString();
             }
@@ -110,11 +116,25 @@ public class Names {
                 var ref = vtype.getReference();
                 var sb = new StringBuilder();
                 sb.append("r");
-                sb.append(mangle(ref.target));
+                sb.append(mangleHelper(ref.target));
                 yield sb.toString();
             }
             case String -> "s";
             case Void -> "v";
         };
+    }
+
+    private static String hash(String string) {
+        try {
+            var hashed = java.security.MessageDigest.getInstance("SHA-256").digest(string.getBytes());
+            var sb = new StringBuilder();
+            for (var b : hashed) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 }
