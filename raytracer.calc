@@ -84,9 +84,14 @@
 			if dot(in_unit_sphere, normal) > 0 { in_unit_sphere }
 			else { neg(in_unit_sphere) }
 		};
+		let random_in_unit_disk = fn() -> vec3 {
+			let mut p = create($rand, $rand, 0);
+			while len2(p) >= 1 { p := create($rand, $rand, 0); };
+			p
+		};
 		struct { 
 			show; showl; create; zero; scale; neg; dot; cross; abs; len; len2; normalized; add; sub; mul; map;
-			reflect; refract; random; random_in_unit_sphere; random_unit_vector; random_in_hemi_sphere;
+			reflect; refract; random; random_in_unit_sphere; random_unit_vector; random_in_hemi_sphere; random_in_unit_disk;
 		}
 	};
 
@@ -270,8 +275,6 @@
 	};
 
 	let world = {
-		let DEPTH_LIMIT = 32;
-
 		let sky_color = fn(r: ray) -> vec3 {
 			let ud = vec3.normalized(r.dir);
 			let t = 0.5 * (ud.y + 1.0);
@@ -281,21 +284,49 @@
 			)
 		};
 
-		let world_objects = object.and(
-			object.sphere(vec3.create(0, -100.5, -1), 100, material.lambertian(colors.white)),
-		object.and(
-			object.sphere(vec3.create(0, 0, -1), 0.5, material.lambertian(vec3.create(0.7, 0.3, 0.3))),
-		object.and(
-			object.sphere(vec3.create(0.2, 0, 0.2), 0.2, material.dielectric(1.5)),
-		object.and(
-			object.sphere(vec3.create(-1, 0, -0.75), 0.5, material.metal(colors.white, 0.1)),
-			object.empty
-		))));
-		
+		let mut scene = object.and!(
+			object.sphere(vec3.create(0, -100000, -1), 100000, material.lambertian(vec3.create(0.5, 0.5, 0.5))),
+			object.sphere(vec3.create(1, 0.5, 0), 0.5, material.lambertian(vec3.create(0.1, 0.2, 0.5))),
+			object.sphere(vec3.create(-1, 0.5, 0), 0.5, material.metal(vec3.create(0.7, 0.6, 0.5), 0.3)),
+			object.sphere(vec3.create(0, 0.5, 0), 0.5, material.dielectric(1.5))
+		);
+
+		let min_x = -1.0;
+		let max_x = +1.0;
+		let min_z = -1.0;
+		let max_z = +1.0;
+		let mut curr_x = min_x;
+		let mut curr_z = min_z;
+		let mut left = false;
+
+		while curr_x < max_x {
+			while curr_z < max_z {
+				let x = curr_x + $rand * 0.35;
+				let z = curr_z + $rand * 0.35;
+				let radius = $max(0.8, $rand) * 0.15;
+				let center = vec3.create(x, radius, z);
+				let matrand = $rand;
+				let mat = if matrand < 0.4 {
+					material.lambertian(vec3.random())
+				} else if matrand < 0.7 {
+					material.metal(vec3.random(), $rand * 0.5)
+				} else {
+					material.dielectric(1.5)
+				};
+				if ~(x >= -1.5 && x <= 1.5 && z >= -0.3 && z <= 0.3) {
+					let sphere = object.sphere(center, radius, mat);
+					scene := object.and!(scene, sphere);
+				};
+				curr_z := curr_z + radius*3;
+			};
+			curr_x := curr_x + 0.5;
+			curr_z := min_z;
+		};
+
 		let trace = fn(r: ray, depth: number) -> vec3 {
 			if(depth <= 0.0) { colors.black }
 			else{
-				let t = world_objects(r);
+				let t = scene(r);
 				if t.hit {
 					let s = t.mat.scatter(r, traceinfo.info(t));
 					if s.scatter {
@@ -307,21 +338,88 @@
 			}
 		};
 
-		fn(r: ray) -> vec3 { trace(r, DEPTH_LIMIT) }
+		fn(r: ray, d: number) -> vec3 { trace(r, d) }
+	};
+
+	type camera = struct {
+		origin: vec3;
+		lookat: vec3;
+		fovv: number;
+		fovh: number;
+		aperture: number;
+		focus_dist: number;
+		horizontal: vec3;
+		vertical: vec3;
+		lower_left_corner: vec3;
+		u: vec3;
+		v: vec3;
+		w: vec3;
+		lens_radius: number;
+	};
+	let camera = {
+		let create = fn(origin: vec3, lookat: vec3, fovv: number, fovh: number, aperture: number, focus_dist: number) -> camera {
+			let w = vec3.normalized(vec3.sub(origin, lookat));
+			let u = vec3.normalized(vec3.cross(vec3.create(0, 1, 0), w));
+			let v = vec3.cross(w, u);
+			let horizontal = vec3.scale(u, fovh * focus_dist);
+			let vertical = vec3.scale(v, fovv * focus_dist);
+			let lower_left_corner = vec3.add!(
+				vec3.neg(vec3.scale(horizontal, 0.5)),
+				vec3.neg(vec3.scale(vertical, 0.5)),
+				vec3.scale(w, focus_dist)
+			);
+			let lens_radius = aperture / 2.0;
+			struct {
+				origin;
+				lookat;
+				fovv;
+				fovh;
+				aperture;
+				focus_dist;
+				horizontal;
+				vertical;
+				lower_left_corner;
+				u;
+				v;
+				w;
+				lens_radius;
+			}
+		};
+
+		let get_ray = fn(cam: camera, s: number, t: number) -> ray {
+			let rd = vec3.scale(vec3.random_in_unit_disk(), cam.lens_radius);
+			let offset = vec3.add(vec3.scale(cam.u, rd.x), vec3.scale(cam.v, rd.y));
+			let origin = vec3.add(cam.origin, offset);
+			let direction = vec3.add!(
+				vec3.scale(cam.horizontal, s),
+				vec3.scale(cam.vertical, t),
+				vec3.neg(cam.lower_left_corner),
+				vec3.neg(origin)
+			);
+			ray.create(origin, direction)
+		};
+
+		struct {
+			create;
+			get_ray;
+		}
 	};
 
 	fn() {
-		let ray_color = world;
-		let fovh = math.rad(75);
-		let fovv = math.rad(40);
+		let fovh = math.rad(80);
+		let fovv = math.rad(45);
 		let aspect_ratio = fovh / fovv;
 		let width = 512;
 		let height = width // aspect_ratio;
 		let viewport_height = 2.0;
 		let viewport_width = viewport_height * aspect_ratio;
-		let origin = vec3.create(0, 0.1, 2);
-		let lookat = vec3.create(0, 0, 0);
-		let samples_per_pixel = 16;
+		let origin = vec3.scale(vec3.create(-3.1, 0.80, -1.7), 0.8);
+		let lookat = vec3.create(0, 0.35, 0);
+		let samples_per_pixel = 1;
+		let depth_limit = 4;
+
+		let cam = camera.create(origin, lookat, fovv, fovh, 0.1, 10);
+
 
 		let printcolor = fn(c: vec3) {
 			let scaled = vec3.scale(c, 255);	
@@ -352,7 +450,7 @@
 					));
 
 					let r = ray.create(origin, dir);
-					color := vec3.add(color, ray_color(r));
+					color := vec3.add(color, world(r, depth_limit));
 					s := s + 1;
 				};
 				color := vec3.map(vec3.scale(color, 1.0 / samples_per_pixel), math.sqrt);
