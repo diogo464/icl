@@ -2,8 +2,9 @@
 	let math = {
 		let rad = fn(deg: number) -> number { deg * $pi / 180 };
 		let deg = fn(rad: number) -> number { rad * 180 / $pi };
+		let sqrt = fn(x: number) -> number { $sqrt(x) };
 
-		struct { rad; deg; }
+		struct { rad; deg; sqrt; }
 	};
 
 	type vec3 = struct { x: number; y: number; z: number; };
@@ -23,6 +24,7 @@
 		let scale	= fn(v: vec3, s: number) -> vec3 {
 			create(v.x * s, v.y * s, v.z * s)
 		};
+		let neg 	= fn(v: vec3) -> vec3 { scale(v, -1) };
 		let dot		= fn(v1: vec3, v2: vec3) -> number {
 			v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 		};
@@ -47,12 +49,50 @@
 		let sub		= fn(v1: vec3, v2: vec3) -> vec3 {
 			create(v1.x-v2.x, v1.y-v2.y, v1.z-v2.z)
 		};
-		let neg 	= fn(v: vec3) -> vec3 { scale(v, -1) };
-		struct { show; showl; create; zero; scale; dot; cross; abs; len; len2; normalized; add; sub; }
+		let mul 	= fn(v1: vec3, v2: vec3) -> vec3 {
+			create(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z)
+		};
+		let map 	= fn(v: vec3, f: fn(number) -> number) -> vec3 {
+			create(f(v.x), f(v.y), f(v.z))
+		};
+		let reflect = fn(v: vec3, n: vec3) -> vec3 {
+			sub(v, scale(n, 2 * dot(v, n)))
+		};
+		let refract = fn(v: vec3, n: vec3, ni_over_nt: number) -> vec3 {
+			let uv = normalized(v);
+			let dt = dot(uv, n);
+			let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1 - dt * dt);
+			if discriminant > 0 {
+				sub(scale(uv, ni_over_nt), scale(n, ni_over_nt * dt + $sqrt(discriminant)))
+			} else {
+				zero()
+			}
+		};
+		let random 	= fn() -> vec3 {
+			create($rand, $rand, $rand)
+		};
+		let random_in_unit_sphere = fn() -> vec3 {
+			let mut v = random();
+			while len2(v) >= 1 { v := random(); };
+			v
+		};
+		let random_unit_vector = fn() -> vec3 {
+			normalized(random_in_unit_sphere())
+		};
+		let random_in_hemi_sphere = fn(normal: vec3) -> vec3 {
+			let in_unit_sphere = random_in_unit_sphere();
+			if dot(in_unit_sphere, normal) > 0 { in_unit_sphere }
+			else { neg(in_unit_sphere) }
+		};
+		struct { 
+			show; showl; create; zero; scale; neg; dot; cross; abs; len; len2; normalized; add; sub; mul; map;
+			reflect; refract; random; random_in_unit_sphere; random_unit_vector; random_in_hemi_sphere;
+		}
 	};
 
 	let colors = struct {
 		white 	= vec3.create(1, 1, 1);
+		black 	= vec3.create(0, 0, 0);
 		red 	= vec3.create(1, 0, 0);
 		green 	= vec3.create(0, 1, 0);
 		blue 	= vec3.create(0, 0, 1);
@@ -63,27 +103,113 @@
 		let create 	= fn(origin: vec3, dir: vec3) -> ray { 
 			struct { origin; dir = vec3.normalized(dir); } 
 		};
+		let zero 	= fn() -> ray { create(vec3.zero(), vec3.zero()) }; 
 		let show 	= fn(r: ray) { print "[origin="; vec3.show(r.origin); print ",dir="; vec3.show(r.dir); print "]"; };
 		let showl 	= fn(r: ray) { show(r); println; };
 		let at		= fn(r: ray, t: number) -> vec3 { vec3.add(r.origin, vec3.scale(r.dir, t)) };
-		struct { create; show; showl; at; }
+		struct { create; zero; show; showl; at; }
 	};
 
-	type material = struct { color: vec3; reflectivity: number; };
-	let material = {
-		let create = fn(color: vec3, reflectivity: number) -> material {
-			struct { color; reflectivity; }
+	type scatter = struct {
+		scatter: bool;
+		scattered: ray;
+		attenuation: vec3;
+	};
+	let scatter = {
+		let default = fn() -> scatter { struct { scatter = false; scattered = ray.zero(); attenuation = vec3.zero(); } };
+		let scatter = fn(scattered: ray, attenuation: vec3) -> scatter { 
+			struct { scatter = true; scattered; attenuation; } 
 		};
-		let default = create(colors.white, 0);
-
-		struct { create; default; }
+		struct { default; scatter; }
 	};
 
-	type traceres = struct { hit: bool; pos: vec3; norm: vec3; mat: material; };
-	let traceres = {
-		let hit = fn(pos: vec3, norm: vec3, mat: material) -> traceres { struct { hit = true; pos; norm; mat; } };
-		let miss = fn() -> traceres { struct { hit = false; pos = vec3.zero(); norm = vec3.zero(); mat = material.default; } };
-		struct { hit; miss; }
+	type hitinfo = struct {
+		hit: bool;
+		pos: vec3;
+		norm: vec3;
+		front: bool;
+	};
+	let hitinfo = {
+		let miss = fn() -> hitinfo { struct { hit = false; pos = vec3.zero(); norm = vec3.zero(); front = false; } };
+		let hit = fn(pos: vec3, norm: vec3, front: bool) -> hitinfo { struct { hit = true; pos; norm; front; } };
+		struct { miss; hit; }
+	};
+
+	type material = struct {
+		scatter: fn(ray, hitinfo) -> scatter;
+	};
+	let material = {
+		let default = fn() -> material { struct { scatter = fn(r: ray, h: hitinfo) -> scatter { scatter.default() }; } };
+
+		let lambertian = fn(albedo: vec3) -> material {
+			struct { 
+				scatter = fn(r: ray, h: hitinfo) -> scatter {
+					let target = vec3.add(h.pos, vec3.add(h.norm, vec3.random_in_unit_sphere()));
+					scatter.scatter(ray.create(h.pos, vec3.sub(target, h.pos)), albedo)
+				};
+			}
+		};
+
+		let metal = fn(albedo: vec3, fuzz: number) -> material {
+			struct { 
+				scatter = fn(r: ray, h: hitinfo) -> scatter {
+					let reflected = vec3.reflect(vec3.normalized(r.dir), h.norm);
+					let scattered = ray.create(h.pos, vec3.add(reflected, vec3.scale(vec3.random_in_unit_sphere(), fuzz)));
+					if vec3.dot(scattered.dir, h.norm) > 0 {
+						scatter.scatter(scattered, albedo)
+					} else {
+						scatter.default()
+					}
+				};
+			}
+		};
+
+		let reflectance = fn(cosine: number, ref_idx: number) -> number {
+			let mut r0 = (1 - ref_idx) / (1 + ref_idx);
+			r0 := r0 * r0;
+			r0 + (1 - r0) * $pow(1 - cosine, 5)
+		};
+
+		let dielectric = fn(refraction_index: number) -> material {
+			struct {
+				scatter = fn(r: ray, h: hitinfo) -> scatter {
+					let attenuation = vec3.create(1, 1, 1);
+					let refraction_ratio = if h.front { 1 / refraction_index } else { refraction_index };
+
+					let unit_dir = vec3.normalized(r.dir);
+					let cos_theta = $min(vec3.dot(vec3.neg(unit_dir), h.norm), 1);
+					let sin_theta = $sqrt(1 - cos_theta * cos_theta);
+
+					let cannot_refract = refraction_ratio * sin_theta > 1;
+					let direction = if cannot_refract || reflectance(cos_theta, refraction_ratio) > $rand {
+						vec3.reflect(unit_dir, h.norm)
+					} else {
+						vec3.refract(unit_dir, h.norm, refraction_ratio)
+					};
+
+					scatter.scatter(ray.create(h.pos, direction), attenuation)
+				};
+			}
+		};
+
+		struct { default; lambertian; metal; dielectric; }
+	};
+
+	type traceinfo = struct {
+		hit: bool;
+		pos: vec3;
+		norm: vec3;
+		front: bool;
+		mat: material;
+	};
+	let traceinfo = {
+		let miss = fn() -> traceinfo { struct { hit = false; pos = vec3.zero(); norm = vec3.zero(); front = false; mat = material.default(); } };
+		let hit = fn(pos: vec3, norm: vec3, front: bool, mat: material) -> traceinfo { struct { hit = true; pos; norm; front; mat; } };
+		let info = fn(t: traceinfo) -> hitinfo {
+			if t.hit { hitinfo.hit(t.pos, t.norm, t.front) }
+			else { hitinfo.miss() }
+		};
+		struct { miss; hit; info; }
 	};
 
 	let geom = {
@@ -99,9 +225,9 @@
 			}
 		};
 
-		let sphere 	= fn(r: ray, center: vec3, radius: number, mat: material) -> traceres {
+		let sphere 	= fn(r: ray, center: vec3, radius: number, mat: material) -> traceinfo {
 			let f = vec3.sub(r.origin, center);
-			if vec3.dot(f, r.dir) > 0 { traceres.miss() }
+			if vec3.dot(f, r.dir) > 0 { traceinfo.miss() }
 			else {
 				let b = 2 * vec3.dot(r.dir, f);
 				let c = vec3.len2(f) - $pow(radius,2);
@@ -111,23 +237,24 @@
 					let t = $min(q.s1, q.s2);
 					let hitpos = ray.at(r, t);
 					let normal = vec3.normalized(vec3.sub(hitpos, center));
-					traceres.hit(hitpos, normal, mat)
-				} else { traceres.miss() }
+					let front = vec3.dot(r.dir, normal) < 0;
+					traceinfo.hit(hitpos, normal, front, mat)
+				} else { traceinfo.miss() }
 			}
 		};
 		struct { sphere; }
 	};
 
-	type object = fn(ray) -> traceres;
+	type object = fn(ray) -> traceinfo;
 	let object = {
-		let empty = fn(r: ray) -> traceres { traceres.miss() };
+		let empty = fn(r: ray) -> traceinfo { traceinfo.miss() };
 
 		let sphere = fn(center: vec3, radius: number, mat: material) -> object {
-			fn(r: ray) -> traceres { geom.sphere(r, center, radius, mat) }
+			fn(r: ray) -> traceinfo { geom.sphere(r, center, radius, mat) }
 		};
 
 		let and = fn(o1: object, o2: object) -> object {
-			fn(r: ray) -> traceres {
+			fn(r: ray) -> traceinfo {
 				let t1 = o1(r);
 				let t2 = o2(r);
 				if t1.hit && t2.hit {
@@ -143,8 +270,7 @@
 	};
 
 	let world = {
-		let SUN_DIR = vec3.normalized(vec3.create(1, 1, 1));
-		let AMBIENT = 0.1;
+		let DEPTH_LIMIT = 32;
 
 		let sky_color = fn(r: ray) -> vec3 {
 			let ud = vec3.normalized(r.dir);
@@ -156,56 +282,51 @@
 		};
 
 		let world_objects = object.and(
-			object.sphere(vec3.create(0, -100.5, -1), 100, material.create(colors.green, 0)),
+			object.sphere(vec3.create(0, -100.5, -1), 100, material.lambertian(colors.white)),
 		object.and(
-			object.sphere(vec3.create(0, 0, -1), 0.5, material.create(colors.red, 0)),
+			object.sphere(vec3.create(0, 0, -1), 0.5, material.lambertian(vec3.create(0.7, 0.3, 0.3))),
 		object.and(
-			object.sphere(vec3.create(1, 0, -1), 0.5, material.create(colors.blue, 0)),
+			object.sphere(vec3.create(0.2, 0, 0.2), 0.2, material.dielectric(1.5)),
 		object.and(
-			object.sphere(vec3.create(-1, 0, -1), 0.5, material.create(colors.red, 0)),
+			object.sphere(vec3.create(-1, 0, -0.75), 0.5, material.metal(colors.white, 0.1)),
 			object.empty
 		))));
+		
+		let trace = fn(r: ray, depth: number) -> vec3 {
+			if(depth <= 0.0) { colors.black }
+			else{
+				let t = world_objects(r);
+				if t.hit {
+					let s = t.mat.scatter(r, traceinfo.info(t));
+					if s.scatter {
+						vec3.mul(s.attenuation, this(s.scattered, depth - 1))
+					} else { colors.black }
+				} else {
+					sky_color(r)
+				}
+			}
+		};
 
-		fn(r: ray) -> vec3 {
-			let t = world_objects(r);
-			if t.hit {
-				let intensity = $max(0.0, vec3.dot(t.norm, SUN_DIR));
-				let diffuse = vec3.scale(t.mat.color, intensity);
-				let ambient = vec3.scale(t.mat.color, AMBIENT);
-				vec3.add(diffuse, ambient)
-			}
-			else {
-				sky_color(r)
-			}
-		}
+		fn(r: ray) -> vec3 { trace(r, DEPTH_LIMIT) }
 	};
 
 	fn() {
-		let fixcolor = fn(c: vec3) { vec3.scale(c, 255); };
-		let printcolor = fn(c: vec3) {
-			let scaled = vec3.scale(c, 255);	
-			printd scaled.x; print " "; printd scaled.y; print " "; printd scaled.z; println;
-		};
-
-		let sky_color = fn(r: ray) -> vec3 {
-			let ud = vec3.normalized(r.dir);
-			let t = 0.5 * (ud.y + 1.0);
-			vec3.add(
-				vec3.scale(colors.white, 1.0 - t),
-				vec3.scale(vec3.create(0.5, 0.7, 1.0), t)
-			)
-		};
-
 		let ray_color = world;
 		let fovh = math.rad(75);
 		let fovv = math.rad(40);
 		let aspect_ratio = fovh / fovv;
-		let width = 400;
+		let width = 512;
 		let height = width // aspect_ratio;
 		let viewport_height = 2.0;
 		let viewport_width = viewport_height * aspect_ratio;
-		let origin = vec3.create(-2, 1, 5);
+		let origin = vec3.create(0, 0.1, 2);
 		let lookat = vec3.create(0, 0, 0);
+		let samples_per_pixel = 16;
+
+		let printcolor = fn(c: vec3) {
+			let scaled = vec3.scale(c, 255);	
+			printd scaled.x; print " "; printd scaled.y; print " "; printd scaled.z; println;
+		};
 
 		println "P3";
 		printd width; print " "; printd height; println;
@@ -214,23 +335,28 @@
 		while y < height {
 			let mut x = 0;
 			while x < width {
-				let u = ((x / (width - 1)) - 0.5) * 2;
-            	let v = ((y / (height - 1)) - 0.5) * 2;
-				let fwd = vec3.normalized(vec3.sub(lookat, origin));
-				let right = vec3.cross(fwd, vec3.create(0, 1, 0));
-				let up = vec3.cross(fwd, right);
-				let dir = vec3.normalized(vec3.add(
-					vec3.add(
-						fwd,
-						vec3.scale(right, u * $tan(fovh / 2))
-					),
-					vec3.scale(up, $tan(fovv / 2) * v)
-				));
+				let mut color = vec3.create(0, 0, 0);
+				let mut s = 0;
+				while s < samples_per_pixel {
+					let u = (((x + $rand) / (width - 1)) - 0.5) * 2;
+					let v = (((y + $rand) / (height - 1)) - 0.5) * 2;
+					let fwd = vec3.normalized(vec3.sub(lookat, origin));
+					let right = vec3.cross(fwd, vec3.create(0, 1, 0));
+					let up = vec3.cross(fwd, right);
+					let dir = vec3.normalized(vec3.add(
+						vec3.add(
+							fwd,
+							vec3.scale(right, u * $tan(fovh / 2))
+						),
+						vec3.scale(up, $tan(fovv / 2) * v)
+					));
 
-				let r = ray.create(origin, dir);
-				let color = ray_color(r);
+					let r = ray.create(origin, dir);
+					color := vec3.add(color, ray_color(r));
+					s := s + 1;
+				};
+				color := vec3.map(vec3.scale(color, 1.0 / samples_per_pixel), math.sqrt);
 				printcolor(color);
-
 				x := x + 1;
 			};
 			y := y + 1;
