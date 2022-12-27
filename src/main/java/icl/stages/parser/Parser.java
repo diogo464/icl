@@ -43,6 +43,18 @@ public class Parser {
 		return node;
 	}
 
+	static AstCall astVarArgCall(Span span, AstNode function, List<AstNode> arguments) {
+		if (arguments.size() < 2)
+			throw new ParserException("Vararg call must have at least 2 arguments at " + span);
+		if (arguments.size() == 2)
+			return astCall(span, function, arguments);
+
+		var args = new ArrayList<AstNode>();
+		args.add(arguments.get(0));
+		args.add(astVarArgCall(span, function, arguments.subList(1, arguments.size())));
+		return astCall(span, function, args);
+	};
+
 	static AstCall astCall(Span span, AstNode function, List<AstNode> arguments) {
 		var node = new AstCall(function, arguments);
 		node.annotate(SPAN_KEY, span);

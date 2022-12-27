@@ -365,21 +365,30 @@ AstNode ExprUnary():
 AstNode ExprCall():
 {
 	var func = (AstNode) null;
+	var vararg		= false;
 	var argument 	= (AstNode) null;
 	var arguments 	= new ArrayList<AstNode>();
 	var endToken 	= (Token) null;
 }
 {
 	func = ExprField()
+
 	(
 		{arguments = new ArrayList<>();}
+		(<DEREF> {vararg = true;})?
 		<LPAREN>
 		(
 			argument = Expr() {arguments.add(argument);}
 			(<COMMA> argument = Expr() {arguments.add(argument);})*
 		)?
 		endToken = <RPAREN>
-		{func = Parser.astCall(Parser.span(func, endToken), func, arguments);}
+		{
+			if( vararg ) {
+				func = Parser.astVarArgCall(Parser.span(func, endToken), func, arguments);
+			} else {
+				func = Parser.astCall(Parser.span(func, endToken), func, arguments);
+			}
+		}
 	)*
 	{ return func; }
 }
