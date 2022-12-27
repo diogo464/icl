@@ -9,5 +9,6 @@ public enum Builtin {
     POW,
     MAX,
     MIN,
+    RAND,
     PI,
 }

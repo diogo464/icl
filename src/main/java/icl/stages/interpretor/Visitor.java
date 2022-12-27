@@ -296,6 +296,9 @@ class Visitor implements AstVisitor {
 				var x = args.get(0).getNumber().getValue();
 				yield Value.createNumber(Math.tan(x));
 			}
+			case RAND -> {
+				yield Value.createNumber(Math.random());
+			}
 		};
 		this.value = result;
 	}

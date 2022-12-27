@@ -172,6 +172,7 @@ public class Parser {
 			case "pow" -> Builtin.POW;
 			case "max" -> Builtin.MAX;
 			case "min" -> Builtin.MIN;
+			case "rand" -> Builtin.RAND;
 			case "pi" -> Builtin.PI;
 			default -> throw new ParserException("Unknown builtin: " + name + " at " + span);
 		};

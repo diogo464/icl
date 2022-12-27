@@ -600,6 +600,14 @@ public class CompilerVisitor implements AstVisitor {
                         "(D)D",
                         false);
             }
+            case RAND -> {
+                this.method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "java/lang/Math",
+                        "random",
+                        "()D",
+                        false);
+            }
         }
     }
 

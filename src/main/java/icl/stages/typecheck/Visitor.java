@@ -413,6 +413,11 @@ class Visitor implements AstVisitor {
 
 				yield ValueType.createNumber();
 			}
+			case RAND -> {
+				if (argc != 0)
+					throw new TypeCheckException("RAND takes exactly 0 arguments", builtin);
+				yield ValueType.createNumber();
+			}
 		};
 
 		builtin.annotate(TypeCheckStage.TYPE_KEY, type);
