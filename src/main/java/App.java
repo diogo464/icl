@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import icl.pipeline.Pipeline;
 import icl.stages.interpretor.InterpretorStage;
@@ -58,6 +60,8 @@ public class App {
 				.add(new TypeCheckStage())
 				.add(new CompilerStage())
 				.process(source_stream);
+
+		Files.createDirectories(Paths.get("calc_target"));
 
 		for (var compiled_class : output.classes) {
 			var class_name = compiled_class.name;
