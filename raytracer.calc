@@ -415,10 +415,10 @@
 		let lookat = vec3.create(0, 0, 0);
 		let cam = camera.create(origin, lookat, fovv, aspect_ratio, 0.1, 10);
 
-		let width = 1920;
+		let width = 1024;
 		let height = width // aspect_ratio;
-		let samples_per_pixel = 512;
-		let depth_limit = 24;
+		let samples_per_pixel = 256;
+		let depth_limit = 8;
 
 		let printcolor = fn(c: vec3) {
 			let scaled = vec3.scale(c, 255);	

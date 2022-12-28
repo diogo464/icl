@@ -1,11 +1,37 @@
 == ICL
 
-.Run
+== Raytracer
+
+image::raytracer.png[]
+
+.running raytracer
 [source,shell]
 ----
-mvn javacc:javacc compile exec:java -Dexec.mainClass="icl.App"
+mkdir -p calc_target && \
+mvn -q -e  javacc:javacc compile exec:java -Dexec.mainClass="App" -Dexec.args="compile raytracer.calc" && \
+java -Xss16m -cp calc_target/ Main > img.ppm && \
+convert img.ppm img.png
 ----
 
+== Running
+
+.Run interpreted
+[source,shell]
+----
+mvn javacc:javacc compile exec:java -Dexec.mainClass="App" -Dexec.args="run <script name>"
+----
+
+.Run compiled
+[source,shell]
+----
+mvn javacc:javacc compile exec:java -Dexec.mainClass="App" -Dexec.args="crun <script name>"
+----
+
+.Run interactive
+[source,shell]
+----
+mvn javacc:javacc compile exec:java -Dexec.mainClass="App" -Dexec.args="interactive"
+----
 
 === RESOURCES
 JavaCC Documentation::
