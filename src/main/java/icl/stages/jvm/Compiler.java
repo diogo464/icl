@@ -114,7 +114,6 @@ public class Compiler {
             var arg = fn.arguments.get(i - 1);
             var arg_type = ftype.args.get(i - 1);
             var arg_name = arg.name;
-            var arg_index = i;
 
             // Duplicate the environment
             method.visitInsn(Opcodes.DUP);
