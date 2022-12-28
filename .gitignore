@@ -3,6 +3,7 @@
 /target/
 /calc_target/
 
+/output/
 /*.calc
 !/raytracer.calc
 /*.class
