@@ -309,10 +309,10 @@ public class CompilerVisitor implements AstVisitor {
     @Override
     public void acceptDecl(AstDecl node) {
         var vtype = node.value.getAnnotation(TypeCheckStage.TYPE_KEY);
-        var field = this.env.define(node.name, vtype);
-
         this.pushEnv(this.env, 0);
         node.value.accept(this);
+        
+        var field = this.env.define(node.name, vtype);
         this.method.visitFieldInsn(
                 Opcodes.PUTFIELD,
                 this.env.getTypename(),
