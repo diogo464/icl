@@ -248,16 +248,17 @@ class Visitor implements AstVisitor {
 
 	@Override
 	public void acceptFn(AstFn fn) {
-		var bodyenv = this.env.beginScope();
+		var declenv = this.env.beginScope();
 		for (var arg : fn.arguments)
-			bodyenv.value.define(arg.name, new Variable(this.resolve(arg.type), true));
+			declenv.value.define(arg.name, new Variable(this.resolve(arg.type), false));
 		var argtypes = fn.arguments.stream().map(a -> this.resolve(a.type)).toList();
 		var rettype = fn.ret.map(this::resolve).orElse(ValueType.createVoid());
 		var fntype = ValueType.createFunction(argtypes, rettype);
 
 		// Define 'this' inside function to allow for recursion even on unamed functions
-		bodyenv.value.define("this", new Variable(fntype, false));
+		declenv.value.define("this", new Variable(fntype, false));
 
+		var bodyenv = declenv.beginScope();
 		var body = TypeCheckStage.check(bodyenv, fn.body);
 		var bodytype = body.getAnnotation(TypeCheckStage.TYPE_KEY);
 		if (!rettype.equals(bodytype)) {
