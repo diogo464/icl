@@ -42,7 +42,7 @@ def run_test_case(kind: RunKind, test_case: TestCase):
             "mvn",
             "-q",
             "exec:java",
-            "-Dexecutable=java"
+            "-Dexecutable=java",
             "-Dexec.mainClass=App",
             f"-Dexec.args={subcmd} {test_case.name}",
         ],
