@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ ! -f "main.calc" ]; then
+	echo "Creating new file"
+	echo "{ println 1 + 1; };;" > main.calc
+fi
+
+MAVEN_OPTS="-ea" mvn -q javacc:javacc compile exec:java -Dexec.mainClass="App" -Dexec.args="crun main.calc"
