@@ -8,8 +8,6 @@ import re
 import sys
 from typing import Iterable
 
-from colorama import Fore, Style
-
 
 class RunKind(enum.Enum):
     INTERPRETED = 1
@@ -58,11 +56,11 @@ def run_test_case(kind: RunKind, test_case: TestCase):
 
     output = outputproc.stdout.decode("utf-8")
     if test_case.expected_output != output:
-        print(f"[{Fore.RED}FAIL{Style.RESET_ALL}] {test_case.name}")
+        print(f"[FAIL] {test_case.name}")
         print(f"Expected:\n {test_case.expected_output}")
         print(f"Got:\n {output}")
     else:
-        print(f"[{Fore.GREEN}OK{Style.RESET_ALL}] {test_case.name}")
+        print(f"[OK] {test_case.name}")
 
 
 def run_test_cases(kind: RunKind, test_cases: Iterable[TestCase]) -> bool:
