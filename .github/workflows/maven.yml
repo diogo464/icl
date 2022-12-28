@@ -31,5 +31,8 @@ jobs:
     - name: Check java version
       run: java --version
     
+    - name: Check maven version
+      run: mvn -version
+
     - name: Run test script
       run: scripts/run_tests.py
