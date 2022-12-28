@@ -39,13 +39,13 @@ def run_test_case(kind: RunKind, test_case: TestCase):
     subcmd = "run" if kind == RunKind.INTERPRETED else "crun"
     outputproc = subprocess.run(
         [
-            "java",
-            "-cp",
-            "target/classes",
-            "App",
-            subcmd,
-            test_case.name
+            "mvn",
+            "-q",
+            "exec:java",
+            "-Dexec.mainClass=App",
+            f"-Dexec.args={subcmd} {test_case.name}",
         ],
+        shell=True,
         capture_output=True,
         env={"MAVEN_OPTS": "-ea"},
     )
