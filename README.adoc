@@ -4,6 +4,8 @@
 
 image::raytracer.png[]
 
+Partial implementation of Ray Tracing in One Weekend https://raytracing.github.io/
+
 .running raytracer
 [source,shell]
 ----
