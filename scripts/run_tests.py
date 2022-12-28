@@ -37,7 +37,7 @@ def read_test_cases() -> list[TestCase]:
 
 def run_test_case(kind: RunKind, test_case: TestCase):
     subcmd = "run" if kind == RunKind.INTERPRETED else "crun"
-    subprocess.run("mvn -version")
+    subprocess.run(["mvn", "-version"])
     outputproc = subprocess.run(
         [
             "mvn",
